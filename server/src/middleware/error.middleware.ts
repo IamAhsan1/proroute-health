@@ -1,19 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { config } from '../config/index.js';
+import { AppError } from '../utils/apiErrors.js';
 
-export class AppError extends Error {
-  public statusCode: number;
-  public isOperational: boolean;
-
-  constructor(message: string, statusCode = 400, isOperational = true) {
-    super(message);
-    this.statusCode = statusCode;
-    this.isOperational = isOperational;
-    Object.setPrototypeOf(this, new.target.prototype);
-    Error.captureStackTrace(this, this.constructor);
-  }
-}
+export * from '../utils/apiErrors.js';
 
 export const errorHandler = (
   err: Error | AppError | ZodError,
@@ -25,7 +15,9 @@ export const errorHandler = (
   if (err instanceof ZodError) {
     res.status(400).json({
       success: false,
+      statusCode: 400,
       error: 'Validation Error',
+      message: 'Validation failed on request inputs',
       details: err.errors.map((e) => ({
         field: e.path.join('.'),
         message: e.message,
@@ -38,7 +30,9 @@ export const errorHandler = (
   if (err instanceof AppError) {
     res.status(err.statusCode).json({
       success: false,
+      statusCode: err.statusCode,
       error: err.message,
+      message: err.message,
     });
     return;
   }
@@ -48,10 +42,12 @@ export const errorHandler = (
 
   res.status(500).json({
     success: false,
+    statusCode: 500,
     error: 'Internal Server Error',
+    message: 'An unexpected internal server error occurred',
     ...(config.NODE_ENV === 'development' && {
-      message: err.message,
       stack: err.stack,
     }),
   });
 };
+
