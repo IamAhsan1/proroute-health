@@ -7,8 +7,7 @@ export const authenticate = (
   res: Response,
   next: NextFunction
 ): void => {
-  const token =
-    req.cookies?.access_token || req.headers.authorization?.replace(/^Bearer\s+/i, '');
+  const token = req.cookies?.access_token || req.headers.authorization?.replace(/^Bearer\s+/i, '');
 
   if (!token) {
     res.status(401).json({

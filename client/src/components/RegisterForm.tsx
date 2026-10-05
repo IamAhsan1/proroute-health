@@ -42,7 +42,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
   return (
     <form onSubmit={handleSubmit}>
       <h2 className="card-title">Create Account</h2>
-      <p className="card-subtitle">Register a Patient or Doctor account with secure Argon2id & JWT.</p>
+      <p className="card-subtitle">
+        Register a Patient or Doctor account with secure Argon2id & JWT.
+      </p>
 
       {error && <div className="alert alert-error">{error}</div>}
 
@@ -106,8 +108,11 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="new-password"
         />
-        <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem', display: 'block' }}>
-          Must contain min 8 chars, uppercase, lowercase, number, and special symbol (e.g. Password123!)
+        <span
+          style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem', display: 'block' }}
+        >
+          Must contain min 8 chars, uppercase, lowercase, number, and special symbol (e.g.
+          Password123!)
         </span>
       </div>
 

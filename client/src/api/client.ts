@@ -54,7 +54,9 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
   if (!res.ok) {
     const errorMsg =
-      body.details?.map((d: { field: string; message: string }) => `${d.field}: ${d.message}`).join(', ') ||
+      body.details
+        ?.map((d: { field: string; message: string }) => `${d.field}: ${d.message}`)
+        .join(', ') ||
       body.error ||
       `HTTP Error ${res.status}`;
     throw new Error(errorMsg);

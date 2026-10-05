@@ -16,7 +16,11 @@
     "build:client": "npm run build --workspace=client",
     "test": "npm run test --workspaces --if-present",
     "test:server": "npm run test --workspace=server",
-    "lint": "npm run lint --workspaces --if-present"
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "npm run lint --workspaces --if-present",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "keywords": [
     "healthcare",
@@ -29,5 +33,11 @@
     "typescript"
   ],
   "author": "Muhammad Ahsan Khan",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.12.0",
+    "prettier": "^3.9.9",
+    "typescript-eslint": "^8.71.0"
+  }
 }

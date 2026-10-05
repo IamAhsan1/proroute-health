@@ -21,13 +21,14 @@ export class UserController {
    * PATCH /api/users/me
    * Mutates identity strictly for req.user.id
    */
-  public updateMe = asyncHandler(async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-    const userId = req.user!.id;
-    const validatedInput = updateProfileSchema.parse(req.body);
-    const updated = await this.service.updateProfile(userId, validatedInput);
-    ApiResponse.success(res, updated, 'User profile updated successfully');
-  });
+  public updateMe = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+      const userId = req.user!.id;
+      const validatedInput = updateProfileSchema.parse(req.body);
+      const updated = await this.service.updateProfile(userId, validatedInput);
+      ApiResponse.success(res, updated, 'User profile updated successfully');
+    }
+  );
 }
 
 export const userController = new UserController();
-

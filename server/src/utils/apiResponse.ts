@@ -25,12 +25,7 @@ export class ApiResponse<T = any> {
     });
   }
 
-  public static success<T>(
-    res: Response,
-    data?: T,
-    message = 'Success',
-    statusCode = 200
-  ): void {
+  public static success<T>(res: Response, data?: T, message = 'Success', statusCode = 200): void {
     new ApiResponse(statusCode, data, message).send(res);
   }
 

@@ -76,9 +76,7 @@ describe('IDOR/BOLA Protection — /api/users/me', () => {
       return null;
     });
 
-    const res = await request(app)
-      .get('/api/users/me')
-      .set('Authorization', `Bearer ${tokenA}`);
+    const res = await request(app).get('/api/users/me').set('Authorization', `Bearer ${tokenA}`);
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
