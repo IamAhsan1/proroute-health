@@ -1,0 +1,33 @@
+{
+  "name": "proroute",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Healthcare Appointment Platform with Constrained AI Intake, Secure Scheduling, Payments, and Real-Time Chat",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev:server": "npm run dev --workspace=server",
+    "dev:client": "npm run dev --workspace=client",
+    "dev": "npm run dev --workspace=server",
+    "build": "npm run build --workspaces --if-present",
+    "build:server": "npm run build --workspace=server",
+    "build:client": "npm run build --workspace=client",
+    "test": "npm run test --workspaces --if-present",
+    "test:server": "npm run test --workspace=server",
+    "lint": "npm run lint --workspaces --if-present"
+  },
+  "keywords": [
+    "healthcare",
+    "appointments",
+    "telehealth",
+    "express",
+    "react",
+    "prisma",
+    "postgresql",
+    "typescript"
+  ],
+  "author": "Muhammad Ahsan Khan",
+  "license": "ISC"
+}
