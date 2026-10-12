@@ -25,6 +25,8 @@ model User {
   email         String         @unique
   passwordHash  String
   role          Role           @default(PATIENT)
+  passwordResetToken   String?
+  passwordResetExpires DateTime?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 

@@ -27,6 +27,8 @@ describe('POST /api/auth/register', () => {
       email: validPatient.email,
       passwordHash: '$argon2id$...',
       role: Role.PATIENT,
+      passwordResetToken: null,
+      passwordResetExpires: null,
       createdAt: new Date(),
       updatedAt: new Date(),
       patient: {
@@ -74,6 +76,8 @@ describe('POST /api/auth/register', () => {
       email: validPatient.email,
       passwordHash: 'hash',
       role: Role.PATIENT,
+      passwordResetToken: null,
+      passwordResetExpires: null,
       createdAt: new Date(),
       updatedAt: new Date(),
       patient: null,

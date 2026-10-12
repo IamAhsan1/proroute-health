@@ -1,5 +1,6 @@
 import { Role, User, Patient, Professional, RefreshToken } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
+import { BadRequestError } from '../../utils/apiErrors.js';
 
 export interface CreateUserData {
   email: string;
@@ -107,6 +108,73 @@ export class AuthRepository {
     return prisma.refreshToken.updateMany({
       where: { userId, revoked: false },
       data: { revoked: true },
+    });
+  }
+
+  public async setPasswordResetToken(
+    userId: string,
+    tokenHash: string,
+    expiresAt: Date
+  ): Promise<User> {
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        passwordResetToken: tokenHash,
+        passwordResetExpires: expiresAt,
+      },
+    });
+  }
+
+  public async resetPasswordAndRevokeSessions(
+    tokenHash: string,
+    newPasswordHash: string
+  ): Promise<{ id: string; email: string }> {
+    return prisma.$transaction(async (tx) => {
+      const now = new Date();
+
+      // 1. Locate account with matching, unexpired token
+      const user = await tx.user.findFirst({
+        where: {
+          passwordResetToken: tokenHash,
+          passwordResetExpires: { gt: now },
+        },
+        select: { id: true, email: true },
+      });
+
+      if (!user) {
+        throw new BadRequestError('Password reset token is invalid or has expired');
+      }
+
+      // 2. Atomically consume token and update password (conditional update prevents double-spend)
+      const result = await tx.user.updateMany({
+        where: {
+          id: user.id,
+          passwordResetToken: tokenHash,
+          passwordResetExpires: { gt: now },
+        },
+        data: {
+          passwordHash: newPasswordHash,
+          passwordResetToken: null,
+          passwordResetExpires: null,
+        },
+      });
+
+      if (result.count !== 1) {
+        throw new BadRequestError('Password reset token is invalid or has expired');
+      }
+
+      // 3. Revoke all active sessions
+      await tx.refreshToken.updateMany({
+        where: {
+          userId: user.id,
+          revoked: false,
+        },
+        data: {
+          revoked: true,
+        },
+      });
+
+      return user;
     });
   }
 }

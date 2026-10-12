@@ -1,6 +1,12 @@
 import { Request, Response } from 'express';
 import { config } from '../../config/index.js';
-import { registerSchema, loginSchema, refreshSchema } from './auth.schema.js';
+import {
+  registerSchema,
+  loginSchema,
+  refreshSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+} from './auth.schema.js';
 import { authService, AuthService } from './auth.service.js';
 import { AuthTokens } from './auth.types.js';
 import { asyncHandler, ApiResponse } from '../../utils/index.js';
@@ -97,6 +103,29 @@ export class AuthController {
     clearAuthCookies(res);
 
     ApiResponse.success(res, null, 'Logged out successfully');
+  });
+
+  public forgotPassword = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const validatedInput = forgotPasswordSchema.parse(req.body);
+    await this.service.forgotPassword(validatedInput);
+
+    ApiResponse.success(
+      res,
+      null,
+      'If an account exists with that email, a password reset link has been sent.'
+    );
+  });
+
+  public resetPassword = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const validatedInput = resetPasswordSchema.parse(req.body);
+    await this.service.resetPassword(validatedInput);
+    clearAuthCookies(res);
+
+    ApiResponse.success(
+      res,
+      null,
+      'Password reset successfully. Please log in with your new password.'
+    );
   });
 }
 

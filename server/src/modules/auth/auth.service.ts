@@ -1,20 +1,33 @@
+import crypto from 'crypto';
 import { Role } from '@prisma/client';
-import { AppError } from '../../middleware/error.middleware.js';
+import {
+  ConflictError,
+  UnauthorizedError,
+} from '../../utils/index.js';
 import { Argon2Service } from './argon2.service.js';
 import { JwtService } from './jwt.service.js';
 import { AuthRepository, authRepository, UserWithProfile } from './auth.repository.js';
-import { RegisterInput, LoginInput } from './auth.schema.js';
+import {
+  RegisterInput,
+  LoginInput,
+  ForgotPasswordInput,
+  ResetPasswordInput,
+} from './auth.schema.js';
 import { AuthTokens, UserResponseDto } from './auth.types.js';
+import { emailService, EmailService } from '../../services/email.service.js';
 
 export class AuthService {
-  constructor(private repo: AuthRepository = authRepository) {}
+  constructor(
+    private repo: AuthRepository = authRepository,
+    private email: EmailService = emailService
+  ) {}
 
   public async register(
     input: RegisterInput
   ): Promise<{ user: UserResponseDto; tokens: AuthTokens }> {
     const existing = await this.repo.findUserByEmail(input.email);
     if (existing) {
-      throw new AppError('An account with this email address already exists', 409);
+      throw new ConflictError('An account with this email address already exists');
     }
 
     const passwordHash = await Argon2Service.hashPassword(input.password);
@@ -52,12 +65,12 @@ export class AuthService {
   public async login(input: LoginInput): Promise<{ user: UserResponseDto; tokens: AuthTokens }> {
     const user = await this.repo.findUserByEmail(input.email);
     if (!user) {
-      throw new AppError('Invalid email or password', 401);
+      throw new UnauthorizedError('Invalid email or password');
     }
 
     const isValid = await Argon2Service.verifyPassword(user.passwordHash, input.password);
     if (!isValid) {
-      throw new AppError('Invalid email or password', 401);
+      throw new UnauthorizedError('Invalid email or password');
     }
 
     const tokens = JwtService.generateTokens({
@@ -82,21 +95,21 @@ export class AuthService {
 
   public async refresh(refreshToken: string): Promise<AuthTokens> {
     if (!refreshToken) {
-      throw new AppError('Refresh token required', 401);
+      throw new UnauthorizedError('Refresh token required');
     }
 
     let payload;
     try {
       payload = JwtService.verifyRefreshToken(refreshToken);
-    } catch (err) {
-      throw new AppError('Invalid or expired refresh token', 401);
+    } catch {
+      throw new UnauthorizedError('Invalid or expired refresh token');
     }
 
     const tokenHash = JwtService.hashToken(refreshToken);
     const dbToken = await this.repo.findRefreshToken(tokenHash);
 
     if (!dbToken || dbToken.revoked || dbToken.expiresAt < new Date()) {
-      throw new AppError('Refresh token has been revoked or expired', 401);
+      throw new UnauthorizedError('Refresh token has been revoked or expired');
     }
 
     // Revoke used token (Token Rotation)
@@ -132,6 +145,37 @@ export class AuthService {
     } catch (err) {
       // Quietly handle logout token lookup failures
     }
+  }
+
+  public async forgotPassword(input: ForgotPasswordInput): Promise<void> {
+    const user = await this.repo.findUserByEmail(input.email);
+    if (!user) {
+      // User enumeration defense: return early without leaking email existence
+      return;
+    }
+
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+    await this.repo.setPasswordResetToken(user.id, tokenHash, expiresAt);
+    await this.email.sendPasswordResetEmail(user.email, rawToken);
+  }
+
+  public async resetPassword(input: ResetPasswordInput): Promise<void> {
+    const tokenHash = crypto.createHash('sha256').update(input.token).digest('hex');
+    const newPasswordHash = await Argon2Service.hashPassword(input.newPassword);
+
+    // Atomic transaction: validates unexpired token, consumes it via conditional update,
+    // updates password, and revokes all active sessions in a single interactive transaction
+    const user = await this.repo.resetPasswordAndRevokeSessions(tokenHash, newPasswordHash);
+
+    // Send security alert email (outside transaction)
+    void this.email
+      .sendPasswordChangedAlert(user.email)
+      .catch((err: unknown) => {
+        console.error('Failed to dispatch password changed alert email:', err);
+      });
   }
 
   public formatUserResponse(user: UserWithProfile): UserResponseDto {

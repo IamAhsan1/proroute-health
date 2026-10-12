@@ -30,6 +30,8 @@ describe('IDOR/BOLA Protection — /api/users/me', () => {
     email: userA.email,
     passwordHash: 'hashA',
     role: Role.PATIENT,
+    passwordResetToken: null,
+    passwordResetExpires: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     patient: {
@@ -48,6 +50,8 @@ describe('IDOR/BOLA Protection — /api/users/me', () => {
     email: userB.email,
     passwordHash: 'hashB',
     role: Role.PATIENT,
+    passwordResetToken: null,
+    passwordResetExpires: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     patient: {
