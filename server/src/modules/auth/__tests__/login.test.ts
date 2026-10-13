@@ -25,8 +25,13 @@ describe('POST /api/auth/login', () => {
       email: credentials.email,
       passwordHash,
       role: Role.DOCTOR,
+      isEmailVerified: false,
+      emailVerificationToken: null,
+      emailVerificationExpires: null,
       passwordResetToken: null,
       passwordResetExpires: null,
+      failedLoginAttempts: 0,
+      lockUntil: null,
       createdAt: new Date(),
       updatedAt: new Date(),
       patient: null,
@@ -77,13 +82,19 @@ describe('POST /api/auth/login', () => {
       email: credentials.email,
       passwordHash,
       role: Role.DOCTOR,
+      isEmailVerified: false,
+      emailVerificationToken: null,
+      emailVerificationExpires: null,
       passwordResetToken: null,
       passwordResetExpires: null,
+      failedLoginAttempts: 0,
+      lockUntil: null,
       createdAt: new Date(),
       updatedAt: new Date(),
       patient: null,
       professional: null,
     });
+    vi.spyOn(authRepository, 'incrementFailedLoginAttempts').mockResolvedValue({} as any);
 
     const res = await request(app).post('/api/auth/login').send({
       email: credentials.email,
