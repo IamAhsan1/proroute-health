@@ -25,10 +25,15 @@ model User {
   email         String         @unique
   passwordHash  String
   role          Role           @default(PATIENT)
-  passwordResetToken   String?
-  passwordResetExpires DateTime?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  isEmailVerified          Boolean        @default(false)
+  emailVerificationToken   String?
+  emailVerificationExpires DateTime?
+  passwordResetToken       String?
+  passwordResetExpires     DateTime?
+  failedLoginAttempts      Int            @default(0)
+  lockUntil                DateTime?
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
 
   patient       Patient?
   professional  Professional?

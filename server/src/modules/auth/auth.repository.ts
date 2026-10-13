@@ -9,6 +9,8 @@ export interface CreateUserData {
   name: string;
   phone?: string;
   bio?: string;
+  verificationToken?: string;
+  verificationExpires?: Date;
 }
 
 export type UserWithProfile = User & {
@@ -44,6 +46,8 @@ export class AuthRepository {
           email: data.email,
           passwordHash: data.passwordHash,
           role: data.role,
+          emailVerificationToken: data.verificationToken || null,
+          emailVerificationExpires: data.verificationExpires || null,
         },
       });
 
@@ -175,6 +179,84 @@ export class AuthRepository {
       });
 
       return user;
+    });
+  }
+
+  public async setEmailVerificationToken(
+    userId: string,
+    tokenHash: string,
+    expiresAt: Date
+  ): Promise<User> {
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        emailVerificationToken: tokenHash,
+        emailVerificationExpires: expiresAt,
+      },
+    });
+  }
+
+  public async verifyUserEmail(tokenHash: string): Promise<User> {
+    const now = new Date();
+    const user = await prisma.user.findFirst({
+      where: {
+        emailVerificationToken: tokenHash,
+        emailVerificationExpires: { gt: now },
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestError('Email verification token is invalid or has expired');
+    }
+
+    return prisma.user.update({
+      where: { id: user.id },
+      data: {
+        isEmailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationExpires: null,
+      },
+    });
+  }
+
+  public async updatePasswordAndRevokeSessions(
+    userId: string,
+    newPasswordHash: string
+  ): Promise<void> {
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: userId },
+        data: {
+          passwordHash: newPasswordHash,
+        },
+      }),
+      prisma.refreshToken.updateMany({
+        where: { userId, revoked: false },
+        data: { revoked: true },
+      }),
+    ]);
+  }
+
+  public async incrementFailedLoginAttempts(
+    userId: string,
+    lockUntil?: Date
+  ): Promise<User> {
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        failedLoginAttempts: { increment: 1 },
+        ...(lockUntil ? { lockUntil } : {}),
+      },
+    });
+  }
+
+  public async resetFailedLoginAttempts(userId: string): Promise<User> {
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        failedLoginAttempts: 0,
+        lockUntil: null,
+      },
     });
   }
 }

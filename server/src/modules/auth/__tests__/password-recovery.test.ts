@@ -19,8 +19,13 @@ describe('Password Recovery Endpoints', () => {
     email: 'patient@example.com',
     passwordHash: '$argon2id$v=19$m=65536,t=3,p=4$someOldPasswordHash',
     role: Role.PATIENT,
+    isEmailVerified: false,
+    emailVerificationToken: null,
+    emailVerificationExpires: null,
     passwordResetToken: null,
     passwordResetExpires: null,
+    failedLoginAttempts: 0,
+    lockUntil: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     patient: {

@@ -6,10 +6,13 @@ import {
   refreshSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  verifyEmailSchema,
+  resendVerificationSchema,
+  changePasswordSchema,
 } from './auth.schema.js';
 import { authService, AuthService } from './auth.service.js';
-import { AuthTokens } from './auth.types.js';
-import { asyncHandler, ApiResponse } from '../../utils/index.js';
+import { AuthTokens, AuthenticatedRequest } from './auth.types.js';
+import { asyncHandler, ApiResponse, UnauthorizedError } from '../../utils/index.js';
 
 const isProd = config.NODE_ENV === 'production';
 
@@ -127,6 +130,47 @@ export class AuthController {
       'Password reset successfully. Please log in with your new password.'
     );
   });
+
+  public verifyEmail = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const token = typeof req.query.token === 'string' ? req.query.token : req.body?.token;
+    const validatedInput = verifyEmailSchema.parse({ token });
+    await this.service.verifyEmail(validatedInput);
+
+    ApiResponse.success(
+      res,
+      null,
+      'Email verified successfully. You may now access all platform features.'
+    );
+  });
+
+  public resendVerification = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const validatedInput = resendVerificationSchema.parse(req.body);
+    await this.service.resendVerification(validatedInput);
+
+    ApiResponse.success(
+      res,
+      null,
+      'If an unverified account exists with that email, a verification link has been sent.'
+    );
+  });
+
+  public changePassword = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+      if (!req.user) {
+        throw new UnauthorizedError('Authentication required');
+      }
+
+      const validatedInput = changePasswordSchema.parse(req.body);
+      await this.service.changePassword(req.user.id, validatedInput);
+      clearAuthCookies(res);
+
+      ApiResponse.success(
+        res,
+        null,
+        'Password changed successfully. Please log in again with your new password.'
+      );
+    }
+  );
 }
 
 export const authController = new AuthController();

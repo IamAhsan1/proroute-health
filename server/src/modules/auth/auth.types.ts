@@ -26,6 +26,7 @@ export interface UserResponseDto {
   id: string;
   email: string;
   role: Role;
+  isEmailVerified: boolean;
   createdAt: Date;
   patient?: {
     id: string;

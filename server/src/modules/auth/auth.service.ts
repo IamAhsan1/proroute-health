@@ -3,6 +3,7 @@ import { Role } from '@prisma/client';
 import {
   ConflictError,
   UnauthorizedError,
+  ForbiddenError,
 } from '../../utils/index.js';
 import { Argon2Service } from './argon2.service.js';
 import { JwtService } from './jwt.service.js';
@@ -12,6 +13,9 @@ import {
   LoginInput,
   ForgotPasswordInput,
   ResetPasswordInput,
+  VerifyEmailInput,
+  ResendVerificationInput,
+  ChangePasswordInput,
 } from './auth.schema.js';
 import { AuthTokens, UserResponseDto } from './auth.types.js';
 import { emailService, EmailService } from '../../services/email.service.js';
@@ -32,6 +36,13 @@ export class AuthService {
 
     const passwordHash = await Argon2Service.hashPassword(input.password);
 
+    const rawVerificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationTokenHash = crypto
+      .createHash('sha256')
+      .update(rawVerificationToken)
+      .digest('hex');
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
     const createdUser = await this.repo.createUserWithProfile({
       email: input.email,
       passwordHash,
@@ -39,7 +50,16 @@ export class AuthService {
       name: input.name,
       phone: input.phone,
       bio: input.bio,
+      verificationToken: verificationTokenHash,
+      verificationExpires,
     });
+
+    // Non-blocking dispatch: sends activation email in background
+    void this.email
+      .sendVerificationEmail(createdUser.email, rawVerificationToken)
+      .catch((err: unknown) => {
+        console.error('Failed to dispatch verification email:', err);
+      });
 
     const tokens = JwtService.generateTokens({
       id: createdUser.id,
@@ -68,9 +88,28 @@ export class AuthService {
       throw new UnauthorizedError('Invalid email or password');
     }
 
+    // 1. Check if account is temporarily locked
+    if (user.lockUntil && user.lockUntil > new Date()) {
+      throw new ForbiddenError(
+        'Account is temporarily locked due to multiple failed login attempts. Please try again later.'
+      );
+    }
+
     const isValid = await Argon2Service.verifyPassword(user.passwordHash, input.password);
     if (!isValid) {
+      const nextAttempts = user.failedLoginAttempts + 1;
+      let lockUntil: Date | undefined;
+      if (nextAttempts >= 5) {
+        lockUntil = new Date(Date.now() + 15 * 60 * 1000); // 15-minute lockout
+      }
+      await this.repo.incrementFailedLoginAttempts(user.id, lockUntil);
+
       throw new UnauthorizedError('Invalid email or password');
+    }
+
+    // Reset failed login attempts and lock on successful authentication
+    if (user.failedLoginAttempts > 0 || user.lockUntil) {
+      await this.repo.resetFailedLoginAttempts(user.id);
     }
 
     const tokens = JwtService.generateTokens({
@@ -150,7 +189,9 @@ export class AuthService {
   public async forgotPassword(input: ForgotPasswordInput): Promise<void> {
     const user = await this.repo.findUserByEmail(input.email);
     if (!user) {
-      // User enumeration defense: return early without leaking email existence
+      // User enumeration & timing defense: execute equivalent dummy crypto work before returning
+      const dummyToken = crypto.randomBytes(32).toString('hex');
+      crypto.createHash('sha256').update(dummyToken).digest('hex');
       return;
     }
 
@@ -159,7 +200,13 @@ export class AuthService {
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
     await this.repo.setPasswordResetToken(user.id, tokenHash, expiresAt);
-    await this.email.sendPasswordResetEmail(user.email, rawToken);
+
+    // Non-blocking asynchronous dispatch: prevents SMTP latency from leaking existence via timing
+    void this.email
+      .sendPasswordResetEmail(user.email, rawToken)
+      .catch((err: unknown) => {
+        console.error('Failed to dispatch password reset email:', err);
+      });
   }
 
   public async resetPassword(input: ResetPasswordInput): Promise<void> {
@@ -178,11 +225,68 @@ export class AuthService {
       });
   }
 
+  public async verifyEmail(input: VerifyEmailInput): Promise<void> {
+    const tokenHash = crypto.createHash('sha256').update(input.token).digest('hex');
+    await this.repo.verifyUserEmail(tokenHash);
+  }
+
+  public async resendVerification(input: ResendVerificationInput): Promise<void> {
+    const user = await this.repo.findUserByEmail(input.email);
+    if (!user || user.isEmailVerified) {
+      // User enumeration & timing defense: execute equivalent dummy work before returning
+      const dummyToken = crypto.randomBytes(32).toString('hex');
+      crypto.createHash('sha256').update(dummyToken).digest('hex');
+      return;
+    }
+
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    await this.repo.setEmailVerificationToken(user.id, tokenHash, expiresAt);
+
+    // Non-blocking dispatch
+    void this.email
+      .sendVerificationEmail(user.email, rawToken)
+      .catch((err: unknown) => {
+        console.error('Failed to dispatch verification email:', err);
+      });
+  }
+
+  public async changePassword(
+    userId: string,
+    input: ChangePasswordInput
+  ): Promise<void> {
+    const user = await this.repo.findUserById(userId);
+    if (!user) {
+      throw new UnauthorizedError('User not found');
+    }
+
+    const isCurrentValid = await Argon2Service.verifyPassword(
+      user.passwordHash,
+      input.currentPassword
+    );
+    if (!isCurrentValid) {
+      throw new UnauthorizedError('Current password is incorrect');
+    }
+
+    const newPasswordHash = await Argon2Service.hashPassword(input.newPassword);
+    await this.repo.updatePasswordAndRevokeSessions(user.id, newPasswordHash);
+
+    // Non-blocking security alert email
+    void this.email
+      .sendPasswordChangedAlert(user.email)
+      .catch((err: unknown) => {
+        console.error('Failed to dispatch password changed alert email:', err);
+      });
+  }
+
   public formatUserResponse(user: UserWithProfile): UserResponseDto {
     return {
       id: user.id,
       email: user.email,
       role: user.role,
+      isEmailVerified: user.isEmailVerified,
       createdAt: user.createdAt,
       patient: user.patient
         ? {

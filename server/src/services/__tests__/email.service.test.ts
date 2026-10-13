@@ -87,4 +87,19 @@ describe('EmailService', () => {
     expect(nodemailer.createTransport).toHaveBeenCalledOnce();
     expect(mockSendMail).toHaveBeenCalledTimes(2);
   });
+
+  it('should format and send email verification template', async () => {
+    const emailService = new EmailService();
+    const sendMailSpy = vi.spyOn(emailService, 'sendMail').mockResolvedValue({} as any);
+
+    await emailService.sendVerificationEmail('patient@example.com', 'raw-verify-token-123');
+
+    expect(sendMailSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'patient@example.com',
+        subject: 'Verify your ProRoute Health account',
+        html: expect.stringContaining('/verify-email?token=raw-verify-token-123'),
+      })
+    );
+  });
 });
