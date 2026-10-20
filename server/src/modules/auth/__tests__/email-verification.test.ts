@@ -18,6 +18,7 @@ describe('Email Verification Endpoints', () => {
     id: 'user-uuid-1',
     email: 'patient@example.com',
     passwordHash: '$argon2id$v=19$m=65536,t=3,p=4$someOldPasswordHash',
+    googleId: null,
     role: Role.PATIENT,
     isEmailVerified: false,
     emailVerificationToken: null,

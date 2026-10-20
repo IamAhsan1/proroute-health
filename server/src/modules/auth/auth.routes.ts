@@ -10,6 +10,7 @@ const router = Router();
 
 router.post('/register', authController.register);
 router.post('/login', authRateLimiter, authController.login);
+router.post('/google', authRateLimiter, authController.googleAuth);
 router.post('/refresh', authController.refresh);
 router.post('/logout', authController.logout);
 

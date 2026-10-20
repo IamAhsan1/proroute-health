@@ -20,6 +20,7 @@ describe('Brute-Force & Account Lockout Defenses', () => {
     id: 'uuid-lockout-1',
     email: testUserEmail,
     passwordHash: '',
+    googleId: null,
     role: Role.DOCTOR,
     isEmailVerified: true,
     emailVerificationToken: null,

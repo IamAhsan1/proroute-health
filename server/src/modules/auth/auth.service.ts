@@ -4,6 +4,7 @@ import {
   ConflictError,
   UnauthorizedError,
   ForbiddenError,
+  BadRequestError,
 } from '../../utils/index.js';
 import { Argon2Service } from './argon2.service.js';
 import { JwtService } from './jwt.service.js';
@@ -16,15 +17,23 @@ import {
   VerifyEmailInput,
   ResendVerificationInput,
   ChangePasswordInput,
+  GoogleAuthInput,
 } from './auth.schema.js';
 import { AuthTokens, UserResponseDto } from './auth.types.js';
 import { emailService, EmailService } from '../../services/email.service.js';
+import { OAuth2Client } from 'google-auth-library';
+import { config } from '../../config/index.js';
 
 export class AuthService {
+  private googleClient: OAuth2Client;
+
   constructor(
     private repo: AuthRepository = authRepository,
-    private email: EmailService = emailService
-  ) {}
+    private email: EmailService = emailService,
+    googleClient?: OAuth2Client
+  ) {
+    this.googleClient = googleClient || new OAuth2Client(config.GOOGLE_CLIENT_ID);
+  }
 
   public async register(
     input: RegisterInput
@@ -93,6 +102,10 @@ export class AuthService {
       throw new ForbiddenError(
         'Account is temporarily locked due to multiple failed login attempts. Please try again later.'
       );
+    }
+
+    if (!user.passwordHash) {
+      throw new UnauthorizedError('This account was registered with Google. Please sign in with Google.');
     }
 
     const isValid = await Argon2Service.verifyPassword(user.passwordHash, input.password);
@@ -262,6 +275,10 @@ export class AuthService {
       throw new UnauthorizedError('User not found');
     }
 
+    if (!user.passwordHash) {
+      throw new BadRequestError('Cannot change password for an account created with Google OAuth.');
+    }
+
     const isCurrentValid = await Argon2Service.verifyPassword(
       user.passwordHash,
       input.currentPassword
@@ -305,6 +322,68 @@ export class AuthService {
             bio: user.professional.bio,
           }
         : null,
+    };
+  }
+
+  public async loginWithGoogle(
+    input: GoogleAuthInput
+  ): Promise<{ user: UserResponseDto; tokens: AuthTokens }> {
+    let payload;
+    try {
+      const ticket = await this.googleClient.verifyIdToken({
+        idToken: input.idToken,
+        audience: config.GOOGLE_CLIENT_ID,
+      });
+      payload = ticket.getPayload();
+    } catch {
+      throw new UnauthorizedError('Invalid or expired Google token');
+    }
+
+    if (!payload || !payload.email) {
+      throw new UnauthorizedError('Invalid Google token payload');
+    }
+
+    if (!payload.email_verified) {
+      throw new UnauthorizedError('Google email must be verified');
+    }
+
+    // 1. Check if user already linked this Google account
+    let user = await this.repo.findUserByGoogleId(payload.sub);
+
+    // 2. If not found by googleId, check by email (Account Linking)
+    if (!user) {
+      const existingUser = await this.repo.findUserByEmail(payload.email);
+      if (existingUser) {
+        user = await this.repo.linkGoogleId(existingUser.id, payload.sub);
+      } else {
+        // 3. New user registration via Google
+        user = await this.repo.createGoogleUser({
+          email: payload.email,
+          googleId: payload.sub,
+          role: (input.role as Role) || Role.PATIENT,
+          name: payload.name || 'Google User',
+        });
+      }
+    }
+
+    // Generate tokens
+    const tokens = JwtService.generateTokens({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+    await this.repo.createRefreshToken(
+      user.id,
+      JwtService.hashToken(tokens.refreshToken),
+      expiresAt
+    );
+
+    return {
+      user: this.formatUserResponse(user),
+      tokens,
     };
   }
 }

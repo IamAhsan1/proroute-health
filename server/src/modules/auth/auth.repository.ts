@@ -259,6 +259,72 @@ export class AuthRepository {
       },
     });
   }
+
+  public async findUserByGoogleId(googleId: string): Promise<UserWithProfile | null> {
+    return prisma.user.findUnique({
+      where: { googleId },
+      include: {
+        patient: true,
+        professional: true,
+      },
+    });
+  }
+
+  public async linkGoogleId(userId: string, googleId: string): Promise<UserWithProfile> {
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        googleId,
+        isEmailVerified: true,
+      },
+      include: {
+        patient: true,
+        professional: true,
+      },
+    });
+  }
+
+  public async createGoogleUser(data: {
+    email: string;
+    googleId: string;
+    role: Role;
+    name: string;
+  }): Promise<UserWithProfile> {
+    return prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email: data.email,
+          googleId: data.googleId,
+          role: data.role,
+          isEmailVerified: true,
+        },
+      });
+
+      if (data.role === Role.DOCTOR) {
+        await tx.professional.create({
+          data: {
+            userId: user.id,
+            profession: 'DOCTOR',
+          },
+        });
+      } else {
+        await tx.patient.create({
+          data: {
+            userId: user.id,
+            name: data.name,
+          },
+        });
+      }
+
+      return tx.user.findUniqueOrThrow({
+        where: { id: user.id },
+        include: {
+          patient: true,
+          professional: true,
+        },
+      });
+    });
+  }
 }
 
 export const authRepository = new AuthRepository();

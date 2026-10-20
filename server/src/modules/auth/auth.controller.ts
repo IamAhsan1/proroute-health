@@ -9,6 +9,7 @@ import {
   verifyEmailSchema,
   resendVerificationSchema,
   changePasswordSchema,
+  googleAuthSchema,
 } from './auth.schema.js';
 import { authService, AuthService } from './auth.service.js';
 import { AuthTokens, AuthenticatedRequest } from './auth.types.js';
@@ -171,6 +172,22 @@ export class AuthController {
       );
     }
   );
+
+  public googleAuth = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const validatedInput = googleAuthSchema.parse(req.body);
+    const result = await this.service.loginWithGoogle(validatedInput);
+
+    setAuthCookies(res, result.tokens);
+
+    ApiResponse.success(
+      res,
+      {
+        user: result.user,
+        accessToken: result.tokens.accessToken,
+      },
+      'Authenticated with Google successfully'
+    );
+  });
 }
 
 export const authController = new AuthController();
