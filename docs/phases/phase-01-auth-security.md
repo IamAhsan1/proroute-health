@@ -55,6 +55,34 @@ server/src/
 - **Service Layer (`*.service.ts`):** Pure business logic, token orchestration, authorization checks, and transaction coordination. Completely agnostic of Express `req`/`res`.
 - **Repository Layer (`*.repository.ts`):** Pure data access through Prisma ORM. Encapsulates all SQL transactions, unique queries, and batch operations.
 
+### 2.2 Frontend Architecture: Reactive Client Enclave
+The frontend application is engineered with **React 18, Vite, and TypeScript** located in `client/src/`:
+
+```
+client/src/
+├── api/
+│   ├── axios.ts         # Centralized Axios instance with silent 401 refresh interceptors
+│   ├── client.ts        # Type-safe API client methods for Auth & Users
+│   └── types.ts         # Shared frontend DTO interfaces
+├── components/
+│   ├── AuthEnclave.tsx  # Unified authentication modal (Login, Register, Password Recovery)
+│   └── AuthStatus.tsx   # Authenticated session banner, role indicator & verification alert
+├── App.tsx              # Root shell with TanStack Query provider
+└── main.tsx             # React DOM bootstrap
+```
+
+#### Client Architectural Pillars:
+1. **Silent Automated Token Refresh (Axios Interceptors):**
+   - When any protected API request encounters an expired 15-minute access token (`HTTP 401 Unauthorized`), the Axios response interceptor intercepts the failure before it bubbles up to UI components.
+   - It transparently dispatches a `POST /api/auth/refresh` request using HttpOnly cookies.
+   - Upon receiving fresh credentials, it replays the original failed request seamlessly, ensuring the user experience is never interrupted by session timeouts.
+2. **Server State Management (TanStack Query):**
+   - Manages asynchronous user profiles, mutations, and cache invalidation.
+   - Profile queries (`useQuery(['me'])`) automatically sync across all open tabs.
+3. **Form Validation & UX (React Hook Form + Zod):**
+   - Forms validate passwords, email formatting, and required fields before sending network packets, providing instant visual feedback.
+   - Dual-role registration tabs allow users to switch seamlessly between Patient and Doctor sign-up modes.
+
 ---
 
 ## 3. Security & Cryptographic Architecture
