@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { config } from '../config/index.js';
 import { AppError } from '../utils/apiErrors.js';
+import { logger } from '../lib/logger.js';
 
 export * from '../utils/apiErrors.js';
 
@@ -38,7 +39,7 @@ export const errorHandler = (
   }
 
   // Fallback internal server error
-  console.error('Unhandled Application Error:', err);
+  logger.error({ err }, 'Unhandled Application Error');
 
   res.status(500).json({
     success: false,

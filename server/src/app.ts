@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { config } from './config/index.js';
+import { httpLogger } from './lib/logger.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import authRoutes from './modules/auth/auth.routes.js';
 import userRoutes from './modules/users/user.routes.js';
@@ -12,6 +13,7 @@ export const createApp = (): Application => {
 
   // Baseline Security & Middleware
   app.use(helmet());
+  app.use(httpLogger);
   app.use(
     cors({
       origin: config.CORS_ORIGIN,
