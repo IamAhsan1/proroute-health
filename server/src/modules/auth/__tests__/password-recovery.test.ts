@@ -20,6 +20,7 @@ describe('Password Recovery Endpoints', () => {
     passwordHash: '$argon2id$v=19$m=65536,t=3,p=4$someOldPasswordHash',
     googleId: null,
     role: Role.PATIENT,
+    status: 'ACTIVE',
     isEmailVerified: false,
     emailVerificationToken: null,
     emailVerificationExpires: null,
@@ -127,6 +128,33 @@ describe('Password Recovery Endpoints', () => {
       expect(res.status).toBe(400);
       expect(res.body.success).toBe(false);
       expect(res.body.error).toContain('invalid or has expired');
+    });
+
+    it('should handle concurrent submissions atomically: exactly one succeeds and second is rejected', async () => {
+      const rawToken = 'race-condition-token-12345';
+      let callCount = 0;
+      vi.spyOn(authRepository, 'resetPasswordAndRevokeSessions').mockImplementation(async () => {
+        callCount++;
+        if (callCount === 1) {
+          return { id: mockUser.id, email: mockUser.email };
+        }
+        throw new BadRequestError('Password reset token is invalid or has expired');
+      });
+      vi.spyOn(emailService, 'sendPasswordChangedAlert').mockResolvedValue(undefined);
+
+      const [res1, res2] = await Promise.all([
+        request(app).post('/api/auth/reset-password').send({
+          token: rawToken,
+          newPassword: 'NewPassword1!',
+        }),
+        request(app).post('/api/auth/reset-password').send({
+          token: rawToken,
+          newPassword: 'NewPassword2!',
+        }),
+      ]);
+
+      const statuses = [res1.status, res2.status].sort();
+      expect(statuses).toEqual([200, 400]);
     });
   });
 });

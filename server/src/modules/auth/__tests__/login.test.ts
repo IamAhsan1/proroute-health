@@ -3,7 +3,7 @@ import request from 'supertest';
 import { createApp } from '../../../app.js';
 import { authRepository, UserWithProfile } from '../auth.repository.js';
 import { Argon2Service } from '../argon2.service.js';
-import { Role } from '@prisma/client';
+import { Role, Prisma } from '@prisma/client';
 
 describe('POST /api/auth/login', () => {
   const app = createApp();
@@ -26,6 +26,7 @@ describe('POST /api/auth/login', () => {
       passwordHash,
       googleId: null,
       role: Role.DOCTOR,
+      status: 'ACTIVE',
       isEmailVerified: false,
       emailVerificationToken: null,
       emailVerificationExpires: null,
@@ -42,7 +43,7 @@ describe('POST /api/auth/login', () => {
         profession: 'DOCTOR',
         specialtyId: 'spec-1',
         verificationStatus: 'APPROVED',
-        consultationFee: 150,
+        consultationFee: new Prisma.Decimal(150),
         bio: 'Cardiologist',
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -84,6 +85,7 @@ describe('POST /api/auth/login', () => {
       passwordHash,
       googleId: null,
       role: Role.DOCTOR,
+      status: 'ACTIVE',
       isEmailVerified: false,
       emailVerificationToken: null,
       emailVerificationExpires: null,
@@ -129,5 +131,35 @@ describe('POST /api/auth/login', () => {
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
     expect(res.body.error).toBe('Validation Error');
+  });
+
+  it('should reject login with 403 Forbidden when account status is SUSPENDED', async () => {
+    const passwordHash = await Argon2Service.hashPassword(credentials.password);
+
+    vi.spyOn(authRepository, 'findUserByEmail').mockResolvedValue({
+      id: 'uuid-doc-suspended',
+      email: credentials.email,
+      passwordHash,
+      googleId: null,
+      role: Role.PATIENT,
+      status: 'SUSPENDED',
+      isEmailVerified: true,
+      emailVerificationToken: null,
+      emailVerificationExpires: null,
+      passwordResetToken: null,
+      passwordResetExpires: null,
+      failedLoginAttempts: 0,
+      lockUntil: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      patient: null,
+      professional: null,
+    });
+
+    const res = await request(app).post('/api/auth/login').send(credentials);
+
+    expect(res.status).toBe(403);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error).toContain('Account is suspended');
   });
 });

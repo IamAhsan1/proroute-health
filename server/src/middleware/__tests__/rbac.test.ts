@@ -3,7 +3,7 @@ import request from 'supertest';
 import express, { Response } from 'express';
 import cookieParser from 'cookie-parser';
 import { Role } from '@prisma/client';
-import { authenticate } from '../auth.middleware.js';
+import { authenticate, requireVerifiedEmail } from '../auth.middleware.js';
 import { requireRole } from '../rbac.middleware.js';
 import { JwtService } from '../../modules/auth/jwt.service.js';
 import { AuthenticatedRequest } from '../../modules/auth/auth.types.js';
@@ -30,6 +30,16 @@ describe('RBAC & Auth Middleware', () => {
     requireRole(Role.ADMIN),
     (_req: AuthenticatedRequest, res: Response) => {
       res.json({ success: true, data: 'Admin area' });
+    }
+  );
+
+  // Verified-email-only protected route
+  app.get(
+    '/api/test/verified-only',
+    authenticate,
+    requireVerifiedEmail,
+    (req: AuthenticatedRequest, res: Response) => {
+      res.json({ success: true, data: `Verified: ${req.user?.email}` });
     }
   );
 
@@ -96,5 +106,59 @@ describe('RBAC & Auth Middleware', () => {
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.data).toContain('Welcome Dr. doctor@example.com');
+  });
+
+  it('should return 403 Forbidden when an access token belongs to a SUSPENDED user', async () => {
+    const suspendedToken = JwtService.generateTokens({
+      id: 'suspended-user-id',
+      email: 'suspended@example.com',
+      role: Role.PATIENT,
+      status: 'SUSPENDED',
+      isEmailVerified: true,
+    }).accessToken;
+
+    const res = await request(app)
+      .get('/api/test/doctor-only')
+      .set('Authorization', `Bearer ${suspendedToken}`);
+
+    expect(res.status).toBe(403);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error).toContain('Account is suspended');
+  });
+
+  it('should return 403 Forbidden when unverified user accesses requireVerifiedEmail endpoint', async () => {
+    const unverifiedToken = JwtService.generateTokens({
+      id: 'unverified-user-id',
+      email: 'unverified@example.com',
+      role: Role.PATIENT,
+      status: 'ACTIVE',
+      isEmailVerified: false,
+    }).accessToken;
+
+    const res = await request(app)
+      .get('/api/test/verified-only')
+      .set('Authorization', `Bearer ${unverifiedToken}`);
+
+    expect(res.status).toBe(403);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error).toContain('Email verification required');
+  });
+
+  it('should return 200 OK when verified user accesses requireVerifiedEmail endpoint', async () => {
+    const verifiedToken = JwtService.generateTokens({
+      id: 'verified-user-id',
+      email: 'verified@example.com',
+      role: Role.PATIENT,
+      status: 'ACTIVE',
+      isEmailVerified: true,
+    }).accessToken;
+
+    const res = await request(app)
+      .get('/api/test/verified-only')
+      .set('Authorization', `Bearer ${verifiedToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data).toContain('Verified: verified@example.com');
   });
 });

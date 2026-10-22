@@ -28,6 +28,7 @@ describe('POST /api/auth/register', () => {
       passwordHash: '$argon2id$...',
       googleId: null,
       role: Role.PATIENT,
+      status: 'ACTIVE',
       isEmailVerified: false,
       emailVerificationToken: null,
       emailVerificationExpires: null,
@@ -83,6 +84,7 @@ describe('POST /api/auth/register', () => {
       passwordHash: 'hash',
       googleId: null,
       role: Role.PATIENT,
+      status: 'ACTIVE',
       isEmailVerified: false,
       emailVerificationToken: null,
       emailVerificationExpires: null,
@@ -128,5 +130,44 @@ describe('POST /api/auth/register', () => {
     expect(res.body.success).toBe(false);
     expect(res.body.error).toBe('Validation Error');
     expect(JSON.stringify(res.body.details)).toContain('Password cannot exceed 128 characters');
+  });
+
+  it('should reject registration attempts with privileged role ADMIN with 400 Bad Request', async () => {
+    const privilegedData = {
+      ...validPatient,
+      role: 'ADMIN',
+    };
+
+    const res = await request(app).post('/api/auth/register').send(privilegedData);
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error).toBe('Validation Error');
+  });
+
+  it('should reject registration attempts with privileged role SUPER_ADMIN with 400 Bad Request', async () => {
+    const privilegedData = {
+      ...validPatient,
+      role: 'SUPER_ADMIN',
+    };
+
+    const res = await request(app).post('/api/auth/register').send(privilegedData);
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error).toBe('Validation Error');
+  });
+
+  it('should propagate 500 error and not issue tokens if database transaction fails during user creation', async () => {
+    vi.spyOn(authRepository, 'findUserByEmail').mockResolvedValue(null);
+    vi.spyOn(authRepository, 'createUserWithProfile').mockRejectedValue(
+      new Error('Database transaction deadlocked or connection reset')
+    );
+
+    const res = await request(app).post('/api/auth/register').send(validPatient);
+
+    expect(res.status).toBe(500);
+    expect(res.body.success).toBe(false);
+    expect(res.body.data).toBeUndefined();
   });
 });

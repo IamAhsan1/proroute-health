@@ -74,6 +74,8 @@ export class AuthService {
       id: createdUser.id,
       email: createdUser.email,
       role: createdUser.role,
+      status: createdUser.status,
+      isEmailVerified: createdUser.isEmailVerified,
     });
 
     // Store hashed refresh token in database (expires in 7 days)
@@ -97,7 +99,14 @@ export class AuthService {
       throw new UnauthorizedError('Invalid email or password');
     }
 
-    // 1. Check if account is temporarily locked
+    // 1. Check if account is suspended
+    if (user.status === 'SUSPENDED') {
+      throw new ForbiddenError(
+        'Account is suspended. Please contact customer support.'
+      );
+    }
+
+    // 2. Check if account is temporarily locked
     if (user.lockUntil && user.lockUntil > new Date()) {
       throw new ForbiddenError(
         'Account is temporarily locked due to multiple failed login attempts. Please try again later.'
@@ -129,6 +138,8 @@ export class AuthService {
       id: user.id,
       email: user.email,
       role: user.role,
+      status: user.status,
+      isEmailVerified: user.isEmailVerified,
     });
 
     const expiresAt = new Date();
@@ -176,17 +187,27 @@ export class AuthService {
     // Revoke used token (Token Rotation)
     await this.repo.revokeRefreshToken(dbToken.id);
 
+    const user = await this.repo.findUserById(dbToken.userId);
+    if (!user) {
+      throw new UnauthorizedError('User not found');
+    }
+    if (user.status === 'SUSPENDED') {
+      throw new ForbiddenError('Account is suspended. Please contact customer support.');
+    }
+
     // Issue fresh token pair
     const tokens = JwtService.generateTokens({
-      id: payload.id,
-      email: payload.email,
-      role: payload.role,
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+      isEmailVerified: user.isEmailVerified,
     });
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
     await this.repo.createRefreshToken(
-      payload.id,
+      user.id,
       JwtService.hashToken(tokens.refreshToken),
       expiresAt
     );
@@ -312,6 +333,7 @@ export class AuthService {
       id: user.id,
       email: user.email,
       role: user.role,
+      status: user.status,
       isEmailVerified: user.isEmailVerified,
       createdAt: user.createdAt,
       patient: user.patient
@@ -327,7 +349,9 @@ export class AuthService {
             profession: user.professional.profession,
             specialtyId: user.professional.specialtyId,
             verificationStatus: user.professional.verificationStatus,
-            consultationFee: user.professional.consultationFee,
+            consultationFee: user.professional.consultationFee
+              ? Number(user.professional.consultationFee)
+              : null,
             bio: user.professional.bio,
           }
         : null,
@@ -375,11 +399,17 @@ export class AuthService {
       }
     }
 
+    if (user.status === 'SUSPENDED') {
+      throw new ForbiddenError('Account is suspended. Please contact customer support.');
+    }
+
     // Generate tokens
     const tokens = JwtService.generateTokens({
       id: user.id,
       email: user.email,
       role: user.role,
+      status: user.status,
+      isEmailVerified: user.isEmailVerified,
     });
 
     const expiresAt = new Date();

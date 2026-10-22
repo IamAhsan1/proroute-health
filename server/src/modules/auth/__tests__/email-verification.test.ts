@@ -20,6 +20,7 @@ describe('Email Verification Endpoints', () => {
     passwordHash: '$argon2id$v=19$m=65536,t=3,p=4$someOldPasswordHash',
     googleId: null,
     role: Role.PATIENT,
+    status: 'ACTIVE',
     isEmailVerified: false,
     emailVerificationToken: null,
     emailVerificationExpires: null,

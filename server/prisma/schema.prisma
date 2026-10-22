@@ -14,6 +14,11 @@ enum Role {
   SUPER_ADMIN
 }
 
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
 enum VerificationStatus {
   PENDING
   APPROVED
@@ -21,15 +26,16 @@ enum VerificationStatus {
 }
 
 model User {
-  id            String         @id @default(uuid())
-  email         String         @unique
-  passwordHash  String?
-  googleId      String?        @unique
-  role          Role           @default(PATIENT)
+  id                       String         @id @default(uuid())
+  email                    String         @unique
+  passwordHash             String?
+  googleId                 String?        @unique
+  role                     Role           @default(PATIENT)
+  status                   UserStatus     @default(ACTIVE)
   isEmailVerified          Boolean        @default(false)
-  emailVerificationToken   String?
+  emailVerificationToken   String?        @unique
   emailVerificationExpires DateTime?
-  passwordResetToken       String?
+  passwordResetToken       String?        @unique
   passwordResetExpires     DateTime?
   failedLoginAttempts      Int            @default(0)
   lockUntil                DateTime?
@@ -39,8 +45,6 @@ model User {
   patient       Patient?
   professional  Professional?
   refreshTokens RefreshToken[]
-
-  @@index([email])
 }
 
 model Patient {
@@ -60,7 +64,7 @@ model Professional {
   profession         String             @default("DOCTOR")
   specialtyId        String?
   verificationStatus VerificationStatus @default(PENDING)
-  consultationFee    Float?
+  consultationFee    Decimal?           @db.Decimal(10, 2)
   bio                String?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt

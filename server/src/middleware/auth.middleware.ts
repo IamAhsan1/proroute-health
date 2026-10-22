@@ -19,10 +19,20 @@ export const authenticate = (
 
   try {
     const payload = JwtService.verifyAccessToken(token);
+    if (payload.status === 'SUSPENDED') {
+      res.status(403).json({
+        success: false,
+        error: 'Forbidden: Account is suspended. Please contact customer support.',
+      });
+      return;
+    }
+
     req.user = {
       id: payload.id,
       email: payload.email,
       role: payload.role,
+      status: payload.status || 'ACTIVE',
+      isEmailVerified: payload.isEmailVerified ?? false,
     };
     next();
   } catch (err) {
@@ -31,4 +41,31 @@ export const authenticate = (
       error: 'Unauthorized: Invalid or expired token',
     });
   }
+};
+
+/**
+ * Middleware requiring verified email address on protected mutation endpoints
+ */
+export const requireVerifiedEmail = (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): void => {
+  if (!req.user) {
+    res.status(401).json({
+      success: false,
+      error: 'Unauthorized: Authentication required',
+    });
+    return;
+  }
+
+  if (!req.user.isEmailVerified) {
+    res.status(403).json({
+      success: false,
+      error: 'Forbidden: Email verification required to access this resource',
+    });
+    return;
+  }
+
+  next();
 };

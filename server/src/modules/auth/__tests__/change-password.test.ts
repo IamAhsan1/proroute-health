@@ -29,6 +29,7 @@ describe('POST /api/auth/change-password', () => {
     passwordHash,
     googleId: null,
     role: Role.PATIENT,
+    status: 'ACTIVE',
     isEmailVerified: true,
     emailVerificationToken: null,
     emailVerificationExpires: null,

@@ -1,10 +1,12 @@
 import { Request } from 'express';
-import { Role } from '@prisma/client';
+import { Role, UserStatus } from '@prisma/client';
 
 export interface JwtPayload {
   id: string;
   email: string;
   role: Role;
+  status?: UserStatus;
+  isEmailVerified?: boolean;
 }
 
 export interface AuthTokens {
@@ -16,6 +18,8 @@ export interface AuthenticatedUser {
   id: string;
   email: string;
   role: Role;
+  status: UserStatus;
+  isEmailVerified: boolean;
 }
 
 export interface AuthenticatedRequest extends Request {
@@ -26,6 +30,7 @@ export interface UserResponseDto {
   id: string;
   email: string;
   role: Role;
+  status: UserStatus;
   isEmailVerified: boolean;
   createdAt: Date;
   patient?: {

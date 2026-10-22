@@ -22,6 +22,7 @@ describe('Brute-Force & Account Lockout Defenses', () => {
     passwordHash: '',
     googleId: null,
     role: Role.DOCTOR,
+    status: 'ACTIVE',
     isEmailVerified: true,
     emailVerificationToken: null,
     emailVerificationExpires: null,

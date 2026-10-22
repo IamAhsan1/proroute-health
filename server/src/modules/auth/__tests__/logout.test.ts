@@ -40,6 +40,26 @@ describe('POST /api/auth/logout and POST /api/auth/refresh', () => {
       createdAt: new Date(),
     });
 
+    vi.spyOn(authRepository, 'findUserById').mockResolvedValue({
+      id: samplePayload.id,
+      email: samplePayload.email,
+      role: samplePayload.role,
+      status: 'ACTIVE',
+      isEmailVerified: true,
+      passwordHash: 'hash',
+      googleId: null,
+      emailVerificationToken: null,
+      emailVerificationExpires: null,
+      passwordResetToken: null,
+      passwordResetExpires: null,
+      failedLoginAttempts: 0,
+      lockUntil: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      patient: null,
+      professional: null,
+    });
+
     vi.spyOn(authRepository, 'createRefreshToken').mockResolvedValue({
       id: 'token-db-2',
       tokenHash: 'new-hash',
@@ -124,5 +144,67 @@ describe('POST /api/auth/logout and POST /api/auth/refresh', () => {
     const cookieHeader = cookies.join(';');
     expect(cookieHeader).toContain('access_token=;');
     expect(cookieHeader).toContain('refresh_token=;');
+  });
+
+  it('should detect token reuse and reject second concurrent refresh attempt when token is rotated', async () => {
+    const tokens = JwtService.generateTokens(samplePayload);
+    const tokenHash = JwtService.hashToken(tokens.refreshToken);
+
+    let isRevoked = false;
+    vi.spyOn(authRepository, 'findRefreshToken').mockImplementation(async () => {
+      return {
+        id: 'token-race-1',
+        tokenHash,
+        userId: samplePayload.id,
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
+        revoked: isRevoked,
+        createdAt: new Date(),
+      };
+    });
+
+    vi.spyOn(authRepository, 'revokeRefreshToken').mockImplementation(async () => {
+      isRevoked = true;
+      return {} as any;
+    });
+
+    vi.spyOn(authRepository, 'findUserById').mockResolvedValue({
+      id: samplePayload.id,
+      email: samplePayload.email,
+      role: samplePayload.role,
+      status: 'ACTIVE',
+      isEmailVerified: true,
+      passwordHash: 'hash',
+      googleId: null,
+      emailVerificationToken: null,
+      emailVerificationExpires: null,
+      passwordResetToken: null,
+      passwordResetExpires: null,
+      failedLoginAttempts: 0,
+      lockUntil: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      patient: null,
+      professional: null,
+    });
+
+    vi.spyOn(authRepository, 'createRefreshToken').mockResolvedValue({
+      id: 'token-race-2',
+      tokenHash: 'new-race-hash',
+      userId: samplePayload.id,
+      expiresAt: new Date(),
+      revoked: false,
+      createdAt: new Date(),
+    });
+
+    vi.spyOn(authRepository, 'revokeAllUserRefreshTokens').mockResolvedValue({ count: 2 });
+
+    // Execute concurrently
+    const [res1, res2] = await Promise.all([
+      request(app).post('/api/auth/refresh').set('Cookie', [`refresh_token=${tokens.refreshToken}`]),
+      request(app).post('/api/auth/refresh').set('Cookie', [`refresh_token=${tokens.refreshToken}`]),
+    ]);
+
+    const statuses = [res1.status, res2.status].sort();
+    expect(statuses).toEqual([200, 401]);
   });
 });

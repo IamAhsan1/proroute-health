@@ -136,16 +136,13 @@ export class AuthRepository {
     return prisma.$transaction(async (tx) => {
       const now = new Date();
 
-      // 1. Locate account with matching, unexpired token
-      const user = await tx.user.findFirst({
-        where: {
-          passwordResetToken: tokenHash,
-          passwordResetExpires: { gt: now },
-        },
-        select: { id: true, email: true },
+      // 1. Locate account via unique index on passwordResetToken
+      const user = await tx.user.findUnique({
+        where: { passwordResetToken: tokenHash },
+        select: { id: true, email: true, passwordResetExpires: true },
       });
 
-      if (!user) {
+      if (!user || !user.passwordResetExpires || user.passwordResetExpires <= now) {
         throw new BadRequestError('Password reset token is invalid or has expired');
       }
 
@@ -178,7 +175,7 @@ export class AuthRepository {
         },
       });
 
-      return user;
+      return { id: user.id, email: user.email };
     });
   }
 
@@ -198,14 +195,13 @@ export class AuthRepository {
 
   public async verifyUserEmail(tokenHash: string): Promise<User> {
     const now = new Date();
-    const user = await prisma.user.findFirst({
-      where: {
-        emailVerificationToken: tokenHash,
-        emailVerificationExpires: { gt: now },
-      },
+    // Locate account via unique index on emailVerificationToken
+    const user = await prisma.user.findUnique({
+      where: { emailVerificationToken: tokenHash },
+      select: { id: true, emailVerificationExpires: true },
     });
 
-    if (!user) {
+    if (!user || !user.emailVerificationExpires || user.emailVerificationExpires <= now) {
       throw new BadRequestError('Email verification token is invalid or has expired');
     }
 
@@ -215,6 +211,18 @@ export class AuthRepository {
         isEmailVerified: true,
         emailVerificationToken: null,
         emailVerificationExpires: null,
+      },
+    });
+  }
+
+  public async purgeExpiredRefreshTokens(olderThanDays = 30): Promise<{ count: number }> {
+    const thresholdDate = new Date(Date.now() - olderThanDays * 24 * 60 * 60 * 1000);
+    return prisma.refreshToken.deleteMany({
+      where: {
+        OR: [
+          { expiresAt: { lt: new Date() } },
+          { revoked: true, createdAt: { lt: thresholdDate } },
+        ],
       },
     });
   }

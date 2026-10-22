@@ -26,26 +26,42 @@ export class UserRepository {
     }
 
     if (user.patient && (data.name || data.phone !== undefined)) {
-      await prisma.patient.update({
-        where: { userId },
+      return prisma.user.update({
+        where: { id: userId },
         data: {
-          ...(data.name && { name: data.name }),
-          ...(data.phone !== undefined && { phone: data.phone }),
+          patient: {
+            update: {
+              ...(data.name && { name: data.name }),
+              ...(data.phone !== undefined && { phone: data.phone }),
+            },
+          },
+        },
+        include: {
+          patient: true,
+          professional: true,
         },
       });
     }
 
     if (user.professional && (data.bio !== undefined || data.consultationFee !== undefined)) {
-      await prisma.professional.update({
-        where: { userId },
+      return prisma.user.update({
+        where: { id: userId },
         data: {
-          ...(data.bio !== undefined && { bio: data.bio }),
-          ...(data.consultationFee !== undefined && { consultationFee: data.consultationFee }),
+          professional: {
+            update: {
+              ...(data.bio !== undefined && { bio: data.bio }),
+              ...(data.consultationFee !== undefined && { consultationFee: data.consultationFee }),
+            },
+          },
+        },
+        include: {
+          patient: true,
+          professional: true,
         },
       });
     }
 
-    return (await this.findProfileByUserId(userId))!;
+    return user;
   }
 }
 
