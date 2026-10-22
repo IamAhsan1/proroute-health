@@ -15,6 +15,8 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().default('ProRoute Health <no-reply@proroute.health>'),
+  RESEND_API_KEY: z.string().optional(),
+  SENDGRID_API_KEY: z.string().optional(),
   GOOGLE_CLIENT_ID: z.string().default('mock-google-client-id.apps.googleusercontent.com'),
 });
 

@@ -19,8 +19,8 @@ export const createApp = (): Application => {
     })
   );
   app.use(cookieParser());
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+  app.use(express.json({ limit: '10kb' }));
+  app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
   // Health check endpoint
   app.get('/health', (_req: Request, res: Response) => {

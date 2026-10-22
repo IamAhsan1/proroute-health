@@ -22,7 +22,40 @@ export class EmailService {
       return this.transporter;
     }
 
-    if (config.SMTP_HOST && config.SMTP_USER && config.SMTP_PASS) {
+    const isResendConfigured = Boolean(
+      config.RESEND_API_KEY &&
+        config.RESEND_API_KEY.trim() !== '' &&
+        !config.RESEND_API_KEY.includes('your_')
+    );
+    const isSendgridConfigured = Boolean(
+      config.SENDGRID_API_KEY &&
+        config.SENDGRID_API_KEY.trim() !== '' &&
+        !config.SENDGRID_API_KEY.includes('your_')
+    );
+
+    if (isResendConfigured) {
+      this.transporter = nodemailer.createTransport({
+        host: 'smtp.resend.com',
+        port: 465,
+        secure: true,
+        auth: {
+          user: 'resend',
+          pass: config.RESEND_API_KEY,
+        },
+      });
+      this.isEthereal = false;
+    } else if (isSendgridConfigured) {
+      this.transporter = nodemailer.createTransport({
+        host: 'smtp.sendgrid.net',
+        port: 587,
+        secure: false,
+        auth: {
+          user: 'apikey',
+          pass: config.SENDGRID_API_KEY,
+        },
+      });
+      this.isEthereal = false;
+    } else if (config.SMTP_HOST && config.SMTP_USER && config.SMTP_PASS) {
       this.transporter = nodemailer.createTransport({
         host: config.SMTP_HOST,
         port: config.SMTP_PORT,
@@ -57,8 +90,14 @@ export class EmailService {
   public async sendMail(options: EmailOptions): Promise<SentMessageInfo> {
     const transporter = await this.getTransporter();
 
+    // Resend sandbox automatically authorizes onboarding@resend.dev without domain verification
+    let fromAddress = config.SMTP_FROM;
+    if (config.RESEND_API_KEY && config.SMTP_FROM.includes('proroute.health')) {
+      fromAddress = 'ProRoute Health <onboarding@resend.dev>';
+    }
+
     const info = await transporter.sendMail({
-      from: config.SMTP_FROM,
+      from: fromAddress,
       to: options.to,
       subject: options.subject,
       text: options.text,

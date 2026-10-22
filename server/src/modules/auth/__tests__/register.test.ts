@@ -115,4 +115,18 @@ describe('POST /api/auth/register', () => {
     expect(res.body.success).toBe(false);
     expect(res.body.error).toBe('Validation Error');
   });
+
+  it('should reject registration with excessively long password (> 128 chars) to mitigate Argon2 CPU DoS', async () => {
+    const invalidData = {
+      ...validPatient,
+      password: 'A1!' + 'a'.repeat(130), // 133 chars
+    };
+
+    const res = await request(app).post('/api/auth/register').send(invalidData);
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error).toBe('Validation Error');
+    expect(JSON.stringify(res.body.details)).toContain('Password cannot exceed 128 characters');
+  });
 });

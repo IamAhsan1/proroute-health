@@ -119,4 +119,15 @@ describe('POST /api/auth/login', () => {
     expect(res.status).toBe(401);
     expect(res.body.success).toBe(false);
   });
+
+  it('should reject login with password exceeding 128 characters with 400 Bad Request', async () => {
+    const res = await request(app).post('/api/auth/login').send({
+      email: credentials.email,
+      password: 'A1!' + 'x'.repeat(130),
+    });
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error).toBe('Validation Error');
+  });
 });

@@ -61,7 +61,7 @@ describe('POST /api/auth/logout and POST /api/auth/refresh', () => {
     expect(authRepository.revokeRefreshToken).toHaveBeenCalledWith('token-db-1');
   });
 
-  it('should reject refresh if token was already revoked with 401 Unauthorized', async () => {
+  it('should reject refresh if token was already revoked with 401 Unauthorized and revoke all user sessions (RFC 6819)', async () => {
     const tokens = JwtService.generateTokens(samplePayload);
     const tokenHash = JwtService.hashToken(tokens.refreshToken);
 
@@ -70,8 +70,12 @@ describe('POST /api/auth/logout and POST /api/auth/refresh', () => {
       tokenHash,
       userId: samplePayload.id,
       expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
-      revoked: true, // already revoked
+      revoked: true, // already revoked (replay attempt)
       createdAt: new Date(),
+    });
+
+    vi.spyOn(authRepository, 'revokeAllUserRefreshTokens').mockResolvedValue({
+      count: 3,
     });
 
     const res = await request(app)
@@ -80,6 +84,8 @@ describe('POST /api/auth/logout and POST /api/auth/refresh', () => {
 
     expect(res.status).toBe(401);
     expect(res.body.success).toBe(false);
+    expect(res.body.error).toContain('Compromised session token detected');
+    expect(authRepository.revokeAllUserRefreshTokens).toHaveBeenCalledWith(samplePayload.id);
   });
 
   it('should clear cookies and revoke refresh token on logout', async () => {

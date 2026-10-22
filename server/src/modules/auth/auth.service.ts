@@ -160,8 +160,17 @@ export class AuthService {
     const tokenHash = JwtService.hashToken(refreshToken);
     const dbToken = await this.repo.findRefreshToken(tokenHash);
 
-    if (!dbToken || dbToken.revoked || dbToken.expiresAt < new Date()) {
+    if (!dbToken || dbToken.expiresAt < new Date()) {
       throw new UnauthorizedError('Refresh token has been revoked or expired');
+    }
+
+    if (dbToken.revoked) {
+      // RFC 6819 Section 5.2.2.3: Replay attack detected!
+      // An already revoked token is being replayed. Invalidate the entire token family.
+      await this.repo.revokeAllUserRefreshTokens(dbToken.userId);
+      throw new UnauthorizedError(
+        'Compromised session token detected. All active sessions have been revoked.'
+      );
     }
 
     // Revoke used token (Token Rotation)

@@ -3,6 +3,7 @@ import { z } from 'zod';
 export const passwordSchema = z
   .string()
   .min(8, 'Password must be at least 8 characters long')
+  .max(128, 'Password cannot exceed 128 characters')
   .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
   .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
   .regex(/[0-9]/, 'Password must contain at least one number')
@@ -19,7 +20,10 @@ export const registerSchema = z.object({
 
 export const loginSchema = z.object({
   email: z.string().email('Invalid email address').toLowerCase().trim(),
-  password: z.string().min(1, 'Password is required'),
+  password: z
+    .string()
+    .min(1, 'Password is required')
+    .max(128, 'Password cannot exceed 128 characters'),
 });
 
 export const refreshSchema = z.object({
@@ -46,7 +50,10 @@ export const resendVerificationSchema = z.object({
 });
 
 export const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1, 'Current password is required'),
+  currentPassword: z
+    .string()
+    .min(1, 'Current password is required')
+    .max(128, 'Password cannot exceed 128 characters'),
   newPassword: passwordSchema,
 });
 
