@@ -1,109 +1,72 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, UserProfile } from './api/client';
-import { LoginForm } from './components/LoginForm';
-import { RegisterForm } from './components/RegisterForm';
+import { AuthEnclave } from './components/AuthEnclave';
 import { AuthStatus } from './components/AuthStatus';
 
 export const App: React.FC = () => {
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
-  const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  // Check if an existing valid session exists via HttpOnly cookie
+  // Manage user session seamlessly with TanStack Query
+  const { data: currentUser, isLoading } = useQuery<UserProfile | null>({
+    queryKey: ['currentUser'],
+    queryFn: async () => {
+      try {
+        const res = await api.getMe();
+        return res.data || null;
+      } catch {
+        return null;
+      }
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes fresh
+    retry: false,
+  });
+
+  // Listen for session expiry from Axios response interceptor
   useEffect(() => {
-    let isMounted = true;
-    api
-      .getMe()
-      .then((res) => {
-        if (isMounted && res.data) {
-          setCurrentUser(res.data);
-        }
-      })
-      .catch(() => {
-        // No active session or cookie expired
-        if (isMounted) {
-          setCurrentUser(null);
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      isMounted = false;
+    const handleSessionExpired = () => {
+      queryClient.setQueryData(['currentUser'], null);
     };
-  }, []);
+
+    window.addEventListener('auth:session-expired', handleSessionExpired);
+    return () => {
+      window.removeEventListener('auth:session-expired', handleSessionExpired);
+    };
+  }, [queryClient]);
 
   const handleAuthSuccess = (user: UserProfile) => {
-    setCurrentUser(user);
+    queryClient.setQueryData(['currentUser'], user);
   };
 
   const handleLogout = () => {
-    setCurrentUser(null);
-    setActiveTab('login');
+    queryClient.setQueryData(['currentUser'], null);
   };
 
-  return (
-    <div className="container">
-      {/* Header */}
-      <header className="header">
-        <div className="brand">
-          <div className="brand-icon">⚕</div>
-          <span className="brand-title">ProRoute</span>
-          <span className="brand-badge">Phase 1: Core Auth Slice</span>
-        </div>
-        <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
-          Healthcare Platform Architecture
-        </div>
-      </header>
-
-      {/* Main Content Area */}
-      <main>
-        <div className="card">
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '2rem 0', color: '#64748b' }}>
-              Checking active session credentials...
-            </div>
-          ) : currentUser ? (
-            <AuthStatus user={currentUser} onLogout={handleLogout} />
-          ) : (
-            <>
-              {/* Tab Selector */}
-              <div className="tabs">
-                <button
-                  type="button"
-                  className={`tab-btn ${activeTab === 'login' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('login')}
-                >
-                  Sign In
-                </button>
-                <button
-                  type="button"
-                  className={`tab-btn ${activeTab === 'register' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('register')}
-                >
-                  Create Account
-                </button>
-              </div>
-
-              {activeTab === 'login' ? (
-                <LoginForm
-                  onSuccess={handleAuthSuccess}
-                  onSwitchToRegister={() => setActiveTab('register')}
-                />
-              ) : (
-                <RegisterForm
-                  onSuccess={handleAuthSuccess}
-                  onSwitchToLogin={() => setActiveTab('login')}
-                />
-              )}
-            </>
-          )}
+  if (isLoading) {
+    return (
+      <main className="w-full min-h-screen bg-background flex flex-col items-center justify-center relative overflow-hidden">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-surface-container-highest flex items-center justify-center relative shadow-lg">
+            <span className="material-symbols-outlined text-primary text-[24px] animate-pulse">
+              vital_signs
+            </span>
+          </div>
+          <p className="text-xs font-mono text-outline animate-pulse">
+            Establishing Secure Clinical Enclave Session...
+          </p>
         </div>
       </main>
-    </div>
+    );
+  }
+
+  return (
+    <main className="w-full min-h-screen bg-background text-on-surface relative flex flex-col justify-between items-center selection:bg-primary-container selection:text-on-primary-container">
+      {currentUser ? (
+        <AuthStatus user={currentUser} onLogout={handleLogout} />
+      ) : (
+        <AuthEnclave onSuccess={handleAuthSuccess} />
+      )}
+    </main>
   );
 };
 

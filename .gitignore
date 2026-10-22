@@ -40,3 +40,5 @@ CLAUDE.md
 *.sublime-project
 *.sublime-workspace
 
+# Design mockups & inspiration
+stitch/
