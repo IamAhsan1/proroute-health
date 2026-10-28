@@ -161,9 +161,9 @@ export class AuthService {
       throw new UnauthorizedError('Refresh token required');
     }
 
-    let payload;
+    let _payload;
     try {
-      payload = JwtService.verifyRefreshToken(refreshToken);
+      _payload = JwtService.verifyRefreshToken(refreshToken);
     } catch {
       throw new UnauthorizedError('Invalid or expired refresh token');
     }

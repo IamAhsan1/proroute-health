@@ -7,6 +7,10 @@ import { httpLogger } from './lib/logger.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import authRoutes from './modules/auth/auth.routes.js';
 import userRoutes from './modules/users/user.routes.js';
+import specialtyRoutes from './modules/specialties/specialty.routes.js';
+import professionalRoutes from './modules/professionals/professional.routes.js';
+import adminDoctorRoutes from './modules/professionals/admin.routes.js';
+import doctorRoutes from './modules/professionals/doctor.routes.js';
 
 export const createApp = (): Application => {
   const app: Application = express();
@@ -37,6 +41,10 @@ export const createApp = (): Application => {
   // Feature Modules
   app.use('/api/auth', authRoutes);
   app.use('/api/users', userRoutes);
+  app.use('/api/specialties', specialtyRoutes);
+  app.use('/api/professionals', professionalRoutes);
+  app.use('/api/admin/doctors', adminDoctorRoutes);
+  app.use('/api/doctors', doctorRoutes);
 
   // Centralized error handler (must be last)
   app.use(errorHandler);
