@@ -14,8 +14,8 @@
 4. [Phased Engineering Roadmap](#4-phased-engineering-roadmap)
 5. [Completed Milestones](#5-completed-milestones)
    - [Phase 1: Architecture Foundation, Auth & Security Hardening](#phase-1-architecture-foundation-auth--security-hardening)
-6. [Upcoming Milestone Previews](#6-upcoming-milestone-previews)
    - [Phase 2: Specialties & Professional Doctor Verification](#phase-2-specialties--professional-doctor-verification)
+6. [Upcoming Milestone Previews](#6-upcoming-milestone-previews)
    - [Phase 3: Constrained AI Triage & pgvector Specialist Routing](#phase-3-constrained-ai-triage--pgvector-specialist-routing)
    - [Phase 4 & 5: Concurrency-Safe Booking & Lifecycle State Machine](#phase-4--5-concurrency-safe-booking--lifecycle-state-machine)
 7. [Observability, Logging & Security Policies](#7-observability-logging--security-policies)
@@ -104,20 +104,20 @@ Because modules are strictly partitioned (`routes -> controller -> service -> re
 
 ## 4. Phased Engineering Roadmap
 
-ProRoute follows a 10-phase milestone execution plan:
+ProRoute follows a 10-phase Full-Stack Vertical Slice milestone execution plan (each phase delivers both core backend APIs and rich frontend user interfaces):
 
-| Phase | Milestone Name | Status | Artifact Reference |
-|---|---|---|---|
-| **01** | Architecture Foundation, Core Auth & Security | **COMPLETED (100% Verified)** | [`docs/phases/phase-01-auth-security.md`](./phases/phase-01-auth-security.md) |
-| **02** | Specialties & Professional Doctor Verification | **READY FOR EXECUTION** | Upcoming (`docs/phases/phase-02-*.md`) |
-| **03** | Constrained AI Triage & pgvector Specialist Routing | Planned | Roadmap Phase 3 |
-| **04** | Doctor Availability & Weekly Slot Management | Planned | Roadmap Phase 4 |
-| **05** | Concurrency-Safe Booking & Lifecycle State Machine | Planned | Roadmap Phase 5 |
-| **06** | Payment Strategy, Webhooks & Idempotency | Planned | Roadmap Phase 6 |
-| **07** | Private Medical Document Management with Amazon S3 | Planned | Roadmap Phase 7 |
-| **08** | Real-Time Authenticated In-Appointment Communication | Planned | Roadmap Phase 8 |
-| **09** | Patient, Doctor & Admin User Interfaces | Planned | Roadmap Phase 9 |
-| **10** | Security Hardening, Automated E2E Testing & Observability | Planned | Roadmap Phase 10 |
+| Phase | Milestone Name | Architecture Scope | Status | Artifact Reference |
+|---|---|---|---|---|
+| **01** | Architecture Foundation, Core Auth & Security | Backend + Auth UI Slice | **COMPLETED (100% Verified)** | [`docs/phases/phase-01-auth-security.md`](./phases/phase-01-auth-security.md) |
+| **02** | Specialties & Professional Doctor Verification | Backend + Directory/Profile/Admin UI | **COMPLETED (100% Verified)** | [`docs/phases/phase-02-specialties-verification.md`](./phases/phase-02-specialties-verification.md) |
+| **03** | Doctor Availability & Weekly Slot Management | Backend + Slot Picker Calendar UI | Planned | Roadmap Phase 3 |
+| **04** | Concurrency-Safe Booking & Lifecycle State Machine | Backend + Booking Workflow UI | Planned | Roadmap Phase 4 |
+| **05** | Payment Strategy, Webhooks & Idempotency | Backend + Checkout & Receipt UI | Planned | Roadmap Phase 5 |
+| **06** | Private Medical Document Management with Amazon S3 | Backend + S3 Document Vault UI | Planned | Roadmap Phase 6 |
+| **07** | Real-Time Authenticated In-Appointment Communication | Socket.IO + Consultation Chat UI | Planned | Roadmap Phase 7 |
+| **08** | Constrained AI Triage & Specialist Routing | Python / Node AI Service + Intake Wizard UI | Planned (Intake Helper) | Roadmap Phase 8 |
+| **09** | Role-Based Dashboards & Patient/Doctor Portal Polish | Integrated Patient Hub, Doctor Portal & Admin Control | Planned | Roadmap Phase 9 |
+| **10** | Security Hardening, Automated E2E Testing & Observability | Full-Stack E2E Hardening & Monitoring | Planned | Roadmap Phase 10 |
 
 ---
 
@@ -132,28 +132,31 @@ ProRoute follows a 10-phase milestone execution plan:
   - Brute-force account lockout (5 attempts, 15-minute lockout).
   - Google OAuth 2.0 integration with account linking.
   - Account suspension enforcement (`UserStatus: ACTIVE | SUSPENDED`) returning 403 Forbidden.
-  - Baseline migration `20261022145500_init_auth_schema` recorded in live Neon PostgreSQL database.
-  - Monetary precision hardened to `DECIMAL(10,2)`.
-  - Token lookups indexed with `@unique` B-tree indexes.
-  - Profile update query count optimized from 3 round-trips to a single atomic update.
   - Full test suite verified: **14 test files, 63/63 passing tests**.
+
+### Phase 2: Specialties & Professional Doctor Verification
+- **Completed:** 2026-10-26
+- **Detailed Report:** See [Phase 2 Specification Document](./phases/phase-02-specialties-verification.md).
+- **Key Highlights:**
+  - Standardized medical specialties taxonomy seeded in PostgreSQL (`Specialty` entity with unique slugs, icons, active toggles).
+  - Live Neon Migration: `20261026110000_add_specialties_and_doctor_credentials` deployed to cloud cluster.
+  - Doctor Credential Management: `PATCH /api/professionals/me` with medical license, issuing board, experience, fee, and documents.
+  - Credential Swapping Protection: Modifying verified credentials automatically resets status from `APPROVED` to `PENDING`.
+  - Email Verification Enforcement: Doctors cannot submit credentials without a verified email address (`requireVerifiedEmail`).
+  - Administrative Review Gate: `/api/admin/doctors/pending`, approval gate (requires license), and rejection with audit reasons.
+  - Public Discovery: `GET /api/doctors` exposes only verified doctors with filters, search, and pagination.
+  - State-of-the-Art Frontend Vertical Slice (`stitch/` design fidelity): Public Directory (`/doctors`), Doctor Profile (`/doctor/profile`), and Admin Review Portal (`/admin/verifications`).
+  - Full Test Suite: **18 test files, 86/86 passing tests (100% green)**, 0 build errors in frontend client.
 
 ---
 
 ## 6. Upcoming Milestone Previews
 
-### Phase 2: Specialties & Professional Doctor Verification
+### Phase 3: Doctor Availability & Weekly Slot Management
 - **Objectives:**
-  - Build clinical taxonomy tables: `Specialty` (Cardiology, Dermatology, Neurology, Orthopedics, Pediatrics, General Medicine, ENT).
-  - Doctor verification workflow: License number, issuing medical board, credential attachments.
-  - Administrative review portal with state machine: `PENDING -> APPROVED | REJECTED`.
-  - Public directory API listing verified doctors with search and specialty filters.
-
-### Phase 3: Constrained AI Triage & pgvector Specialist Routing
-- **Objectives:**
-  - Patient intake chat interface for symptom description.
-  - Emergency red-flag detection (e.g. chest pain, severe dyspnea) forcing immediate ER disclaimers.
-  - PostgreSQL `pgvector` embeddings matching clinical symptoms to appropriate medical specialties.
+  - Recurring weekly consultation windows and custom date overrides/holiday blocks.
+  - Slot expansion service generating bookable appointment slots.
+  - Real-time availability calendar UI for doctors and booking slot picker for patients.
   - Strictly constrained JSON schema with Zod validation. Fallback to manual selection if AI times out.
 
 ### Phase 4 & 5: Concurrency-Safe Booking & Lifecycle State Machine
