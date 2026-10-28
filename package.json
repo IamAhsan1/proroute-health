@@ -16,6 +16,7 @@
     "build:client": "npm run build --workspace=client",
     "test": "npm run test --workspaces --if-present",
     "test:server": "npm run test --workspace=server",
+    "test:client": "npm run test --workspace=client",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "npm run lint --workspaces --if-present",
