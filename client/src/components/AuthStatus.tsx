@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { api, UserProfile } from '../api/client';
 
 interface AuthStatusProps {
@@ -7,6 +8,7 @@ interface AuthStatusProps {
 }
 
 export const AuthStatus: React.FC<AuthStatusProps> = ({ user, onLogout }) => {
+  const queryClient = useQueryClient();
   const [loggingOut, setLoggingOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -90,7 +92,9 @@ export const AuthStatus: React.FC<AuthStatusProps> = ({ user, onLogout }) => {
     setVerifyLoading(true);
     try {
       const res = await api.verifyEmail({ token: verifyToken.trim() });
-      setSuccess(res.data?.message || 'Email successfully verified in the clinical enclave!');
+      setSuccess(res.data?.message || 'Email successfully verified!');
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      queryClient.invalidateQueries({ queryKey: ['myDoctorProfile'] });
       setIsVerifyOpen(false);
       setVerifyToken('');
     } catch (err: unknown) {
@@ -119,8 +123,8 @@ export const AuthStatus: React.FC<AuthStatusProps> = ({ user, onLogout }) => {
               <span className="material-symbols-outlined text-primary text-[20px]">verified_user</span>
             </div>
             <div>
-              <h2 className="text-base font-bold text-on-surface">Clinical Session Active</h2>
-              <p className="text-[11px] text-outline">Enclave IDOR/BOLA Protected</p>
+              <h2 className="text-base font-bold text-on-surface">Active Account</h2>
+              <p className="text-[11px] text-outline">Secure Session</p>
             </div>
           </div>
           <span
@@ -224,20 +228,6 @@ export const AuthStatus: React.FC<AuthStatusProps> = ({ user, onLogout }) => {
           )}
         </div>
 
-        {/* Security & Dual-Mode Cookie Telemetry */}
-        <div className="bg-surface-container-lowest/60 rounded-lg p-3.5 mb-4 border border-outline-variant/20 font-mono text-[11px] text-on-surface-variant flex flex-col gap-1.5">
-          <div className="flex items-center gap-1.5 text-secondary font-bold text-xs">
-            <span className="material-symbols-outlined text-[15px]">security</span>
-            <span>Active Cryptographic Session Telemetry</span>
-          </div>
-          <div className="text-on-surface/90">
-            • <strong className="text-primary">access_token:</strong> HttpOnly; SameSite=Strict (15m window)
-          </div>
-          <div className="text-on-surface/90">
-            • <strong className="text-secondary">refresh_token:</strong> HttpOnly; Path=/api/auth/refresh (7d rotation)
-          </div>
-        </div>
-
         {/* Real Backend Action Buttons: Change Password & Sign Out */}
         <div className="flex flex-col gap-2.5">
           <button
@@ -246,7 +236,7 @@ export const AuthStatus: React.FC<AuthStatusProps> = ({ user, onLogout }) => {
             className="w-full py-2.5 px-4 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-semibold flex items-center justify-center gap-2 transition-all border border-outline-variant/30 cursor-pointer"
           >
             <span className="material-symbols-outlined text-[16px] text-secondary">password</span>
-            <span>Change Security Password (POST /api/auth/change-password)</span>
+            <span>Change Account Password</span>
           </button>
 
           <button
@@ -256,7 +246,7 @@ export const AuthStatus: React.FC<AuthStatusProps> = ({ user, onLogout }) => {
             className="w-full py-2.5 px-4 rounded-lg border border-error/40 text-error hover:bg-error-container/20 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-[16px]">logout</span>
-            <span>{loggingOut ? 'Terminating Session...' : 'Sign Out (Clear Session Cookies)'}</span>
+            <span>{loggingOut ? 'Signing Out...' : 'Sign Out'}</span>
           </button>
         </div>
       </div>
@@ -349,7 +339,7 @@ export const AuthStatus: React.FC<AuthStatusProps> = ({ user, onLogout }) => {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary text-[20px]">mark_email_read</span>
-                <h3 className="text-base font-semibold text-on-surface">Submit Email Verification Token</h3>
+                <h3 className="text-base font-semibold text-on-surface">Email Verification Code</h3>
               </div>
               <button
                 type="button"
@@ -361,7 +351,7 @@ export const AuthStatus: React.FC<AuthStatusProps> = ({ user, onLogout }) => {
             </div>
 
             <p className="text-xs text-on-surface-variant mb-4 leading-relaxed">
-              Paste the 64-character verification token dispatched to your inbox to execute <code className="text-secondary font-mono">POST /api/auth/verify-email</code>.
+              Paste the verification code sent to your inbox to verify your email address.
             </p>
 
             <form onSubmit={handleVerifyEmail} className="flex flex-col gap-3">
@@ -370,15 +360,15 @@ export const AuthStatus: React.FC<AuthStatusProps> = ({ user, onLogout }) => {
                 required
                 value={verifyToken}
                 onChange={(e) => setVerifyToken(e.target.value)}
-                placeholder="64-character verification token"
-                className="w-full bg-surface-container-lowest text-on-surface placeholder:text-outline text-xs px-3.5 py-2.5 rounded-lg border border-outline-variant/30 focus:border-primary focus:outline-none font-mono"
+                placeholder="Enter verification code"
+                className="w-full bg-surface-container-lowest text-on-surface placeholder:text-outline text-xs px-3.5 py-2.5 rounded-lg border border-outline-variant/30 focus:border-primary focus:outline-none"
               />
               <button
                 type="submit"
                 disabled={verifyLoading}
                 className="w-full py-2.5 px-4 rounded-lg bg-primary text-on-primary text-xs font-bold flex items-center justify-center gap-2 hover:bg-primary-fixed transition-all cursor-pointer disabled:opacity-50"
               >
-                {verifyLoading ? 'Verifying Token...' : 'Verify Email Address'}
+                {verifyLoading ? 'Verifying...' : 'Verify Email Address'}
               </button>
             </form>
           </div>
