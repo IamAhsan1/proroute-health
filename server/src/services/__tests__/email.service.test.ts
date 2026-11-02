@@ -11,8 +11,14 @@ describe('EmailService', () => {
   it('should initialize Ethereal transporter in development and send email when no external provider is configured', async () => {
     const originalResend = config.RESEND_API_KEY;
     const originalSendgrid = config.SENDGRID_API_KEY;
+    const originalSmtpHost = config.SMTP_HOST;
+    const originalSmtpUser = config.SMTP_USER;
+    const originalSmtpPass = config.SMTP_PASS;
     config.RESEND_API_KEY = undefined;
     config.SENDGRID_API_KEY = undefined;
+    config.SMTP_HOST = undefined;
+    config.SMTP_USER = undefined;
+    config.SMTP_PASS = undefined;
 
     const mockSendMail = vi.fn().mockResolvedValue({
       messageId: '<test-message-id@ethereal.email>',
@@ -63,6 +69,9 @@ describe('EmailService', () => {
     } finally {
       config.RESEND_API_KEY = originalResend;
       config.SENDGRID_API_KEY = originalSendgrid;
+      config.SMTP_HOST = originalSmtpHost;
+      config.SMTP_USER = originalSmtpUser;
+      config.SMTP_PASS = originalSmtpPass;
     }
   });
 
@@ -106,8 +115,14 @@ describe('EmailService', () => {
   it('should reuse existing transporter for multiple emails', async () => {
     const originalResend = config.RESEND_API_KEY;
     const originalSendgrid = config.SENDGRID_API_KEY;
+    const originalSmtpHost = config.SMTP_HOST;
+    const originalSmtpUser = config.SMTP_USER;
+    const originalSmtpPass = config.SMTP_PASS;
     config.RESEND_API_KEY = undefined;
     config.SENDGRID_API_KEY = undefined;
+    config.SMTP_HOST = undefined;
+    config.SMTP_USER = undefined;
+    config.SMTP_PASS = undefined;
 
     const mockSendMail = vi.fn().mockResolvedValue({
       messageId: '<msg-1>',
@@ -142,6 +157,9 @@ describe('EmailService', () => {
     } finally {
       config.RESEND_API_KEY = originalResend;
       config.SENDGRID_API_KEY = originalSendgrid;
+      config.SMTP_HOST = originalSmtpHost;
+      config.SMTP_USER = originalSmtpUser;
+      config.SMTP_PASS = originalSmtpPass;
     }
   });
 

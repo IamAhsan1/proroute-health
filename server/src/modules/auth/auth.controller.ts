@@ -41,6 +41,7 @@ export const clearAuthCookies = (res: Response): void => {
     httpOnly: true,
     secure: isProd,
     sameSite: 'strict',
+    path: '/',
   });
   res.clearCookie('refresh_token', {
     httpOnly: true,
