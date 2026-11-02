@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { PendingDoctor } from '../../../services/doctor.service';
+import { AlertTriangle, X } from 'lucide-react';
+import { Button } from '../../../components/ui';
 
 interface RejectionReasonModalProps {
   doctor: PendingDoctor;
@@ -23,20 +25,23 @@ export const RejectionReasonModal: React.FC<RejectionReasonModalProps> = ({
     }
   };
 
+  const doctorName = doctor.user?.name || (doctor as any).name || 'Doctor';
+
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-surface-container border border-surface-container-highest rounded-2xl max-w-lg w-full p-6 shadow-2xl flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between">
           <h3 className="font-headline font-bold text-base text-on-surface flex items-center gap-2">
-            <span className="material-symbols-outlined text-error text-[20px]">gpp_bad</span>
-            Reject Application: {doctor.user.name}
+            <AlertTriangle className="w-5 h-5 text-destructive" />
+            Reject Application: {doctorName}
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="text-outline hover:text-on-surface"
+            className="text-outline hover:text-on-surface p-1 rounded-lg focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+            aria-label="Close Modal"
           >
-            <span className="material-symbols-outlined text-[20px]">close</span>
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -46,37 +51,44 @@ export const RejectionReasonModal: React.FC<RejectionReasonModalProps> = ({
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-mono uppercase tracking-wider text-outline">
+            <label htmlFor="rejectionReasonInput" className="text-xs font-semibold text-on-surface">
               Rejection Reason (5 to 500 characters)
             </label>
             <textarea
+              id="rejectionReasonInput"
+              required
+              minLength={5}
+              maxLength={500}
               rows={4}
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
-              placeholder="e.g. The submitted PMDC license number could not be verified on the official registry portal. Please upload a clear copy of your valid registration card."
-              className="w-full bg-surface-container-lowest text-on-surface text-sm rounded-xl p-3 border border-surface-container-highest focus:outline-none focus:border-error transition-colors"
+              placeholder="e.g. The uploaded license document is expired. Please submit current PMDC renewal certificate."
+              className="w-full px-3 py-2 text-xs rounded-xl bg-surface-container-high border border-surface-container-highest focus:outline-none focus:border-destructive text-on-surface"
             />
-            <div className="flex justify-between text-[11px] text-outline font-mono">
-              <span>Minimum 5 characters required</span>
-              <span>{rejectionReason.length} / 500</span>
-            </div>
+            <span className="text-[10px] text-outline text-right">
+              {rejectionReason.length}/500
+            </span>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-surface-container-highest">
-            <button
+          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-surface-container-highest">
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors"
+              disabled={isPending}
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              disabled={rejectionReason.trim().length < 5 || isPending}
-              className="px-4 py-2 rounded-xl text-xs font-semibold bg-error text-on-error hover:bg-red-500 disabled:opacity-40 transition-colors shadow-md flex items-center gap-1.5"
+              variant="destructive"
+              size="sm"
+              disabled={isPending || rejectionReason.trim().length < 5}
+              className="gap-1.5 font-semibold"
             >
               {isPending ? 'Rejecting...' : 'Confirm Rejection'}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

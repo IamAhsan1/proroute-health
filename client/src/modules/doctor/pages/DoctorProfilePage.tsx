@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { specialtyService, Specialty } from '../../../services/specialty.service';
-import { doctorService, DoctorProfile, UpdateDoctorProfilePayload } from '../../../services/doctor.service';
+import { doctorService, DoctorProfile } from '../../../services/doctor.service';
+import { DoctorCredentialsFormData } from '../../../schemas/doctor.schema';
 import { UserProfile } from '../../../api/client';
 import { VerificationStatusCard } from '../components/VerificationStatusCard';
 import { DoctorCredentialsForm } from '../components/DoctorCredentialsForm';
+import { Lock, ShieldAlert } from 'lucide-react';
 
 interface DoctorProfilePageProps {
   currentUser: UserProfile | null;
@@ -12,16 +14,6 @@ interface DoctorProfilePageProps {
 
 export const DoctorProfilePage: React.FC<DoctorProfilePageProps> = ({ currentUser }) => {
   const queryClient = useQueryClient();
-
-  const [formData, setFormData] = useState<UpdateDoctorProfilePayload>({
-    licenseNumber: '',
-    medicalBoard: '',
-    specialtyId: '',
-    yearsOfExperience: 5,
-    consultationFee: 45,
-    bio: '',
-    credentialDocumentUrl: '',
-  });
 
   const [feedbackMessage, setFeedbackMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -39,30 +31,15 @@ export const DoctorProfilePage: React.FC<DoctorProfilePageProps> = ({ currentUse
     retry: false,
   });
 
-  // Populate form with existing data once loaded
-  useEffect(() => {
-    if (profile) {
-      setFormData({
-        licenseNumber: profile.licenseNumber || '',
-        medicalBoard: profile.medicalBoard || '',
-        specialtyId: profile.specialtyId || '',
-        yearsOfExperience: profile.yearsOfExperience ?? 5,
-        consultationFee: profile.consultationFee ? Number(profile.consultationFee) : 45,
-        bio: profile.bio || '',
-        credentialDocumentUrl: profile.credentialDocumentUrl || '',
-      });
-    }
-  }, [profile]);
-
   // 3. Mutation for updating profile
   const updateMutation = useMutation({
-    mutationFn: (payload: UpdateDoctorProfilePayload) => doctorService.updateMyDoctorProfile(payload),
+    mutationFn: (payload: DoctorCredentialsFormData) => doctorService.updateMyDoctorProfile(payload),
     onSuccess: (updated) => {
       queryClient.setQueryData(['myDoctorProfile'], updated);
       queryClient.invalidateQueries({ queryKey: ['approvedDoctors'] });
       setFeedbackMessage({
         type: 'success',
-        text: 'Credentials updated. Status reset to PENDING for administrative audit.',
+        text: 'Your medical credentials have been updated and submitted for review.',
       });
     },
     onError: (err: any) => {
@@ -71,25 +48,16 @@ export const DoctorProfilePage: React.FC<DoctorProfilePageProps> = ({ currentUse
     },
   });
 
-  const handleFieldChange = (field: keyof UpdateDoctorProfilePayload, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (data: DoctorCredentialsFormData) => {
     setFeedbackMessage(null);
-    updateMutation.mutate({
-      ...formData,
-      consultationFee: Number(formData.consultationFee),
-      yearsOfExperience: Number(formData.yearsOfExperience),
-    });
+    updateMutation.mutate(data);
   };
 
   if (!currentUser) {
     return (
       <div className="w-full min-h-[70vh] flex flex-col items-center justify-center p-6 text-center">
         <div className="w-16 h-16 rounded-2xl bg-surface-container flex items-center justify-center text-outline mb-4">
-          <span className="material-symbols-outlined text-[32px]">lock</span>
+          <Lock className="w-8 h-8 text-outline" />
         </div>
         <h2 className="font-headline font-bold text-xl text-on-surface">Authentication Required</h2>
         <p className="text-on-surface-variant text-sm mt-1 max-w-sm">
@@ -103,7 +71,7 @@ export const DoctorProfilePage: React.FC<DoctorProfilePageProps> = ({ currentUse
     return (
       <div className="w-full min-h-[70vh] flex flex-col items-center justify-center p-6 text-center">
         <div className="w-16 h-16 rounded-2xl bg-surface-container flex items-center justify-center text-error mb-4">
-          <span className="material-symbols-outlined text-[32px]">shield</span>
+          <ShieldAlert className="w-8 h-8 text-error" />
         </div>
         <h2 className="font-headline font-bold text-xl text-on-surface">Doctor Portal Restricted</h2>
         <p className="text-on-surface-variant text-sm mt-1 max-w-sm">
@@ -113,7 +81,7 @@ export const DoctorProfilePage: React.FC<DoctorProfilePageProps> = ({ currentUse
     );
   }
 
-  const isEmailVerified = currentUser.isEmailVerified !== false;
+  const isEmailVerified = Boolean(currentUser.isEmailVerified);
 
   return (
     <div className="w-full min-h-screen bg-background text-on-surface py-8 px-4 sm:px-6 lg:px-8">
@@ -121,11 +89,11 @@ export const DoctorProfilePage: React.FC<DoctorProfilePageProps> = ({ currentUse
         <VerificationStatusCard
           profile={profile}
           isEmailVerified={isEmailVerified}
+          userEmail={currentUser.email}
         />
 
         <DoctorCredentialsForm
-          formData={formData}
-          onChange={handleFieldChange}
+          initialData={profile}
           onSubmit={handleSubmit}
           specialties={specialties}
           isPending={updateMutation.isPending}

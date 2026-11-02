@@ -1,6 +1,7 @@
 import React from 'react';
 import { Specialty } from '../../../services/specialty.service';
-import { getSpecialtyIcon } from './DoctorCard';
+import { getSpecialtyLucideIcon } from './DoctorCard';
+import { Layers } from 'lucide-react';
 
 interface SpecialtyFilterChipsProps {
   specialties: Specialty[];
@@ -17,44 +18,43 @@ export const SpecialtyFilterChips: React.FC<SpecialtyFilterChipsProps> = ({
 }) => {
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-xs font-mono uppercase tracking-wider text-outline">
+      <span className="text-xs font-semibold text-on-surface-variant">
         Filter by Clinical Specialty
       </span>
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin">
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
         <button
           type="button"
           onClick={() => onSelectSpecialty('')}
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-2 cursor-pointer ${
             selectedSpecialtyId === ''
-              ? 'bg-primary text-on-primary shadow-md shadow-primary/20'
+              ? 'bg-primary text-on-primary shadow-xs'
               : 'bg-surface-container-high/80 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest'
           }`}
         >
-          <span className="material-symbols-outlined text-[16px]">domain</span>
+          <Layers className="w-3.5 h-3.5" />
           All Specialties
         </button>
 
         {isLoading ? (
-          <div className="flex items-center gap-2 text-xs text-outline animate-pulse">
+          <div className="flex items-center gap-2 text-xs text-outline">
             Loading specialties...
           </div>
         ) : (
           specialties.map((spec) => {
             const active = selectedSpecialtyId === spec.id;
+            const SpecIcon = getSpecialtyLucideIcon(spec.slug);
             return (
               <button
                 key={spec.id}
                 type="button"
                 onClick={() => onSelectSpecialty(active ? '' : spec.id)}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-colors flex items-center gap-2 cursor-pointer ${
                   active
-                    ? 'bg-secondary text-on-secondary shadow-md shadow-secondary/20 font-semibold'
+                    ? 'bg-primary text-on-primary shadow-xs font-semibold'
                     : 'bg-surface-container-high/80 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest'
                 }`}
               >
-                <span className="material-symbols-outlined text-[16px]">
-                  {getSpecialtyIcon(spec.slug)}
-                </span>
+                <SpecIcon className="w-3.5 h-3.5" />
                 {spec.name}
               </button>
             );

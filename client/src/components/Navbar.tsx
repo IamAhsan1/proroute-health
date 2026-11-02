@@ -1,6 +1,17 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { UserProfile } from '../api/client';
+import { ThemeToggle } from './ThemeToggle';
+import {
+  Stethoscope,
+  Search,
+  Home,
+  ShieldCheck,
+  User,
+  LogOut,
+  Calendar,
+  Layers,
+} from 'lucide-react';
 
 interface NavbarProps {
   currentUser: UserProfile | null;
@@ -12,119 +23,149 @@ export const Navbar: React.FC<NavbarProps> = ({ currentUser, onLogout }) => {
 
   const isActive = (path: string) => location.pathname === path;
 
+  // Determine role-based workspace fast-travel target
+  const getWorkspaceLink = () => {
+    if (!currentUser) return null;
+    if (currentUser.role === 'ADMIN' || currentUser.role === 'SUPER_ADMIN') {
+      return { to: '/admin/verifications', label: 'Admin Console' };
+    }
+    if (currentUser.role === 'DOCTOR') {
+      return { to: '/doctor/dashboard', label: 'Doctor Workspace' };
+    }
+    return { to: '/portal/dashboard', label: 'My Care Portal' };
+  };
+
+  const getHomeTarget = () => {
+    if (!currentUser) return '/';
+    if (currentUser.role === 'DOCTOR') return '/doctor/dashboard';
+    if (currentUser.role === 'ADMIN' || currentUser.role === 'SUPER_ADMIN') return '/admin/verifications';
+    return '/';
+  };
+
+  const homeTarget = getHomeTarget();
+  const workspace = getWorkspaceLink();
+
   return (
-    <header className="sticky top-0 z-50 w-full bg-surface-container/85 backdrop-blur-xl border-b border-surface-container-highest/60 transition-colors">
+    <header className="sticky top-0 z-50 w-full bg-surface/90 backdrop-blur-md border-b border-surface-container-highest transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         {/* Brand / Logo */}
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-primary-container via-primary to-secondary flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform">
-            <span className="material-symbols-outlined text-surface-container-lowest text-[22px] font-bold">
-              vital_signs
-            </span>
+        <Link to={homeTarget} className="flex items-center gap-2.5 group shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-on-primary shadow-xs transition-transform">
+            <Stethoscope className="w-5 h-5 text-on-primary" />
           </div>
           <div className="flex flex-col">
-            <span className="font-headline font-bold text-lg tracking-tight text-on-surface flex items-center gap-1">
+            <span className="font-headline font-bold text-lg tracking-tight text-on-surface flex items-center gap-1.5 leading-none">
               ProRoute
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary" />
             </span>
-            <span className="text-[10px] font-mono tracking-wider text-outline uppercase -mt-1">
-              Clinical Platform
+            <span className="text-[10px] tracking-wider text-outline uppercase mt-0.5">
+              Healthcare Network
             </span>
           </div>
         </Link>
 
-        {/* Navigation Links */}
-        <nav className="hidden md:flex items-center gap-1 bg-surface-container-low/90 p-1 rounded-xl border border-surface-container-highest/50">
+        {/* Public Consumer Navigation Links */}
+        <nav className="hidden md:flex items-center gap-1 bg-surface-container-high/60 dark:bg-surface-container/60 p-1 rounded-xl border border-surface-container-highest text-xs font-medium">
           <Link
-            to="/doctors"
-            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
-              isActive('/doctors')
-                ? 'bg-primary/15 text-primary shadow-sm'
+            to={homeTarget}
+            className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+              isActive(homeTarget)
+                ? 'bg-surface-container-high text-primary font-bold shadow-sm'
                 : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/60'
             }`}
           >
-            <span className="material-symbols-outlined text-[18px]">medical_services</span>
+            <Home className="w-3.5 h-3.5" />
+            {currentUser?.role === 'DOCTOR' ? 'My Workspace' : currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN' ? 'Admin Console' : 'Home'}
+          </Link>
+
+          <Link
+            to="/doctors"
+            className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+              isActive('/doctors')
+                ? 'bg-surface-container-high text-primary font-bold shadow-sm'
+                : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/60'
+            }`}
+          >
+            <Search className="w-3.5 h-3.5" />
             Find Doctors
           </Link>
 
-          {/* Patient Portal Link */}
-          {currentUser?.role === 'PATIENT' && (
-            <Link
-              to="/portal/dashboard"
-              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
-                isActive('/portal/dashboard')
-                  ? 'bg-secondary/15 text-secondary shadow-sm'
-                  : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/60'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[18px]">home_health</span>
-              Patient Portal
-            </Link>
-          )}
-
-          {/* Doctor Portal Link */}
-          {(currentUser?.role === 'DOCTOR' || !currentUser) && (
-            <Link
-              to="/doctor/profile"
-              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
-                isActive('/doctor/profile')
-                  ? 'bg-secondary/15 text-secondary shadow-sm'
-                  : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/60'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[18px]">badge</span>
-              Doctor Workspace
-            </Link>
-          )}
-
-          {/* Admin Verification Portal Link */}
-          {(currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN' || !currentUser) && (
-            <Link
-              to="/admin/verifications"
-              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 ${
-                isActive('/admin/verifications')
-                  ? 'bg-primary-container text-on-primary-container shadow-sm'
-                  : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/60'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[18px]">admin_panel_settings</span>
-              Admin Control
-            </Link>
-          )}
+          <Link
+            to="/doctors"
+            className="px-3.5 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/60 transition-all flex items-center gap-1.5"
+          >
+            <Layers className="w-3.5 h-3.5" />
+            Specialties
+          </Link>
         </nav>
 
-        {/* User Status & Action */}
-        <div className="flex items-center gap-3">
+        {/* Right Action Cluster */}
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <ThemeToggle />
+
           {currentUser ? (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Authenticated Workspace Launcher */}
+              {workspace && (
+                <Link
+                  to={workspace.to}
+                  className="px-3 py-1.5 rounded-xl bg-primary/15 hover:bg-primary/25 border border-primary/30 text-primary text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>{workspace.label}</span>
+                </Link>
+              )}
+
+              {/* User Identity & Logout */}
               <div className="hidden sm:flex flex-col text-right">
-                <span className="text-xs font-semibold text-on-surface truncate max-w-[140px]">
-                  {currentUser.email}
+                <span className="text-xs font-semibold text-on-surface truncate max-w-[120px]">
+                  {currentUser.patient?.name || currentUser.email.split('@')[0]}
                 </span>
-                <span className="text-[10px] font-mono tracking-wider text-primary uppercase">
+                <span className="text-[9px] font-mono tracking-wider text-outline uppercase">
                   {currentUser.role}
                 </span>
               </div>
+
               <button
+                type="button"
                 onClick={onLogout}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium text-error hover:bg-error/10 border border-error/30 transition-colors flex items-center gap-1"
-                title="Sign out of clinical enclave"
+                className="p-2 sm:px-3 sm:py-1.5 rounded-xl text-xs font-medium text-error hover:bg-error/10 border border-error/30 transition-colors flex items-center gap-1 cursor-pointer"
+                title="Sign Out"
               >
-                <span className="material-symbols-outlined text-[16px]">logout</span>
+                <LogOut className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Logout</span>
               </button>
             </div>
           ) : (
-            <Link
-              to="/"
-              className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-primary text-on-primary hover:bg-primary-fixed transition-colors shadow-md shadow-primary/20 flex items-center gap-1"
-            >
-              <span className="material-symbols-outlined text-[16px]">lock</span>
-              Sign In
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                to="/login"
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/60 transition-all flex items-center gap-1.5"
+              >
+                <User className="w-3.5 h-3.5" />
+                Sign In
+              </Link>
+
+              <Link
+                to="/register"
+                className="hidden sm:inline-flex px-3 py-1.5 rounded-xl text-xs font-semibold text-primary hover:bg-primary/10 border border-primary/20 transition-all"
+              >
+                Register
+              </Link>
+
+              <Link
+                to="/doctors"
+                className="px-4 py-1.5 rounded-xl text-xs font-semibold bg-primary hover:bg-primary-fixed text-on-primary transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span>Book Doctor</span>
+              </Link>
+            </div>
           )}
         </div>
       </div>
     </header>
   );
 };
+
+export default Navbar;

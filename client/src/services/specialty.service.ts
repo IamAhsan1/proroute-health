@@ -21,6 +21,21 @@ export interface SingleSpecialtyResponse {
   data: Specialty;
 }
 
+export interface AdminSpecialty extends Specialty {
+  doctorCount: number;
+}
+
+export interface AdminSpecialtiesResponse {
+  success: boolean;
+  data: AdminSpecialty[];
+}
+
+export interface ActionResponse {
+  success: boolean;
+  message: string;
+  data?: any;
+}
+
 export const specialtyService = {
   async getActiveSpecialties(): Promise<Specialty[]> {
     const res = await axiosInstance.get<SpecialtiesResponse>('/api/specialties');
@@ -30,5 +45,38 @@ export const specialtyService = {
   async getSpecialtyBySlug(slug: string): Promise<Specialty> {
     const res = await axiosInstance.get<SingleSpecialtyResponse>(`/api/specialties/${slug}`);
     return res.data.data;
+  },
+
+  // Admin endpoints
+  async getAllAdminSpecialties(): Promise<AdminSpecialty[]> {
+    const res = await axiosInstance.get<AdminSpecialtiesResponse>('/api/specialties/admin/all');
+    return res.data.data;
+  },
+
+  async createSpecialty(payload: {
+    name: string;
+    slug?: string;
+    description?: string;
+    icon?: string;
+  }): Promise<Specialty> {
+    const res = await axiosInstance.post<ActionResponse>('/api/specialties/admin', payload);
+    return res.data.data;
+  },
+
+  async updateSpecialty(
+    id: string,
+    payload: {
+      name?: string;
+      description?: string | null;
+      icon?: string | null;
+      isActive?: boolean;
+    }
+  ): Promise<Specialty> {
+    const res = await axiosInstance.patch<ActionResponse>(`/api/specialties/admin/${id}`, payload);
+    return res.data.data;
+  },
+
+  async deleteSpecialty(id: string): Promise<void> {
+    await axiosInstance.delete(`/api/specialties/admin/${id}`);
   },
 };

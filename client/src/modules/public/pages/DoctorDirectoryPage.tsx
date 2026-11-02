@@ -5,6 +5,7 @@ import { doctorService, PublicDoctor } from '../../../services/doctor.service';
 import { DoctorCard } from '../components/DoctorCard';
 import { DirectorySearchToolbar } from '../components/DirectorySearchToolbar';
 import { SpecialtyFilterChips } from '../components/SpecialtyFilterChips';
+import { ShieldCheck, UserCheck, SearchX } from 'lucide-react';
 
 export const DoctorDirectoryPage: React.FC = () => {
   const [selectedSpecialtyId, setSelectedSpecialtyId] = useState<string>('');
@@ -42,24 +43,23 @@ export const DoctorDirectoryPage: React.FC = () => {
     <div className="w-full min-h-screen bg-background text-on-surface py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto flex flex-col gap-8">
         {/* Header Banner */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-surface-container-low via-surface-container to-surface-container-high border border-surface-container-highest/60 p-6 sm:p-10 shadow-2xl">
-          <div className="absolute -right-10 -bottom-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="relative overflow-hidden rounded-3xl bg-surface-container border border-surface-container-highest p-6 sm:p-8 shadow-sm">
           <div className="relative z-10 max-w-3xl flex flex-col gap-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/15 text-primary text-xs font-mono font-semibold tracking-wide w-fit">
-              <span className="material-symbols-outlined text-[16px]">verified</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold tracking-wide w-fit">
+              <ShieldCheck className="w-4 h-4" />
               100% BOARD-VERIFIED PRACTITIONERS
             </div>
-            <h1 className="font-headline font-bold text-3xl sm:text-4xl lg:text-5xl tracking-tight text-on-surface">
-              Find & Consult With <span className="text-primary">Verified Specialists</span>
+            <h1 className="font-headline font-bold text-3xl sm:text-4xl tracking-tight text-on-surface">
+              Find &amp; Consult With <span className="text-primary">Verified Specialists</span>
             </h1>
-            <p className="text-on-surface-variant text-sm sm:text-base leading-relaxed">
-              Browse top clinical departments and book consultations with certified doctors verified against official medical registers. Unverified accounts are strictly isolated.
+            <p className="text-on-surface-variant text-sm leading-relaxed">
+              Browse top clinical departments and book consultations with certified doctors verified against official medical registers. Only licensed and approved physicians are displayed in this directory.
             </p>
           </div>
         </div>
 
         {/* Filters & Search Toolbar */}
-        <div className="bg-surface-container/90 backdrop-blur-xl border border-surface-container-highest/70 rounded-xl p-4 sm:p-6 flex flex-col gap-6 shadow-lg">
+        <div className="bg-surface-container border border-surface-container-highest rounded-2xl p-4 sm:p-6 flex flex-col gap-6 shadow-sm">
           <DirectorySearchToolbar
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
@@ -79,8 +79,9 @@ export const DoctorDirectoryPage: React.FC = () => {
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-on-surface flex items-center gap-2">
+              <UserCheck className="w-5 h-5 text-primary" />
               Available Doctors
-              <span className="text-xs font-mono bg-surface-container-highest px-2 py-0.5 rounded text-outline">
+              <span className="text-xs bg-surface-container-highest px-2.5 py-0.5 rounded-full text-on-surface-variant font-medium">
                 {doctors.length} Verified
               </span>
             </h2>
@@ -91,7 +92,7 @@ export const DoctorDirectoryPage: React.FC = () => {
               {[1, 2, 3].map((n) => (
                 <div
                   key={n}
-                  className="bg-surface-container/70 rounded-xl p-6 border border-surface-container-highest animate-pulse flex flex-col gap-4"
+                  className="bg-surface-container/70 rounded-2xl p-6 border border-surface-container-highest animate-pulse flex flex-col gap-4"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-16 h-16 rounded-xl bg-surface-container-highest"></div>
@@ -100,27 +101,25 @@ export const DoctorDirectoryPage: React.FC = () => {
                       <div className="h-3 bg-surface-container-highest rounded w-1/2"></div>
                     </div>
                   </div>
-                  <div className="h-12 bg-surface-container-highest rounded"></div>
-                  <div className="h-10 bg-surface-container-highest rounded"></div>
+                  <div className="h-12 bg-surface-container-highest/50 rounded-xl"></div>
+                  <div className="h-8 bg-surface-container-highest/30 rounded-xl"></div>
                 </div>
               ))}
             </div>
           ) : doctors.length === 0 ? (
-            <div className="bg-surface-container/50 border border-dashed border-surface-container-highest rounded-2xl p-12 text-center flex flex-col items-center justify-center gap-3">
-              <div className="w-14 h-14 rounded-full bg-surface-container-high flex items-center justify-center text-outline">
-                <span className="material-symbols-outlined text-[28px]">search_off</span>
+            <div className="rounded-2xl bg-surface-container/60 border border-surface-container-highest/60 p-12 text-center flex flex-col items-center justify-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-surface-container-highest flex items-center justify-center text-outline">
+                <SearchX className="w-6 h-6 text-outline" />
               </div>
-              <h3 className="font-headline font-semibold text-base text-on-surface">
-                No Verified Doctors Found
-              </h3>
-              <p className="text-on-surface-variant text-xs max-w-md">
-                No practitioners currently match your search criteria or price filter. Unverified doctor accounts are strictly hidden until approved by our medical board.
+              <h3 className="font-bold text-base text-on-surface">No Verified Doctors Found</h3>
+              <p className="text-xs text-on-surface-variant max-w-md">
+                No active medical practitioners matched your current specialty filter or search parameters.
               </p>
               {(selectedSpecialtyId || searchQuery || maxFee < 500) && (
                 <button
                   type="button"
                   onClick={handleResetFilters}
-                  className="mt-2 text-xs font-semibold text-primary hover:underline"
+                  className="mt-2 text-xs font-semibold text-primary hover:underline cursor-pointer"
                 >
                   Reset all filters
                 </button>

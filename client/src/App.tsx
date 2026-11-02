@@ -1,18 +1,31 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, UserProfile } from './api/client';
 import { AuthEnclave } from './components/AuthEnclave';
-import { AuthStatus } from './components/AuthStatus';
 import { RoleGuard } from './routes/RoleGuard';
 import { PublicLayout } from './layouts/PublicLayout';
 import { DoctorLayout } from './layouts/DoctorLayout';
 import { AdminLayout } from './layouts/AdminLayout';
 import { PatientLayout } from './layouts/PatientLayout';
 import { DoctorDirectoryPage } from './modules/public';
-import { DoctorProfilePage } from './modules/doctor';
-import { AdminVerificationsPage } from './modules/admin';
+import { LandingPage } from './modules/public/pages/LandingPage';
+import { ThemePreviewPage } from './modules/public/pages/ThemePreviewPage';
+import { DoctorDashboardPage, DoctorProfilePage } from './modules/doctor';
+import { AdminVerificationsPage, AdminSpecialtiesPage } from './modules/admin';
 import { PatientPortalPage } from './modules/patient';
+import { VerifyEmailPage, ResetPasswordPage } from './modules/auth';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { PlannedFeaturePage } from './components/PlannedFeaturePage';
+import {
+  CalendarClock,
+  Calendar,
+  FileText,
+  MessageSquare,
+  Activity,
+  CreditCard,
+  History,
+} from 'lucide-react';
 
 export const App: React.FC = () => {
   const queryClient = useQueryClient();
@@ -48,8 +61,16 @@ export const App: React.FC = () => {
     queryClient.setQueryData(['currentUser'], user);
   };
 
-  const handleLogout = () => {
-    queryClient.setQueryData(['currentUser'], null);
+  const handleLogout = async () => {
+    try {
+      await api.logout();
+    } catch {
+      // Ignore network errors on logout to ensure client resets
+    } finally {
+      queryClient.setQueryData(['currentUser'], null);
+      queryClient.removeQueries({ queryKey: ['currentUser'] });
+      queryClient.removeQueries({ queryKey: ['myDoctorProfile'] });
+    }
   };
 
   if (isLoading) {
@@ -62,7 +83,7 @@ export const App: React.FC = () => {
             </span>
           </div>
           <p className="text-xs font-mono text-outline animate-pulse">
-            Establishing Secure Clinical Enclave Session...
+            Loading ProRoute Healthcare...
           </p>
         </div>
       </main>
@@ -79,75 +100,43 @@ export const App: React.FC = () => {
           <Route
             path="/"
             element={
-              <div className="w-full min-h-[calc(100vh-4rem)] flex flex-col justify-between items-center py-8 px-4">
-                {user ? (
-                  <div className="w-full max-w-4xl flex flex-col gap-8 items-center">
-                    <AuthStatus user={user} onLogout={handleLogout} />
-
-                    {/* Role-Specific Workspaces Fast-Travel */}
-                    <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      {/* Doctor Directory shortcut (available to all) */}
-                      <Link
-                        to="/doctors"
-                        className="bg-surface-container/85 border border-surface-container-highest rounded-2xl p-5 hover:border-primary/50 transition-all flex flex-col gap-2 group shadow-lg"
-                      >
-                        <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center group-hover:scale-105 transition-transform">
-                          <span className="material-symbols-outlined text-[20px]">medical_services</span>
-                        </div>
-                        <h4 className="font-headline font-bold text-sm text-on-surface">Find Doctors</h4>
-                        <p className="text-xs text-on-surface-variant">Browse verified specialists and directory</p>
-                      </Link>
-
-                      {/* Doctor Workspace shortcut */}
-                      {user.role === 'DOCTOR' && (
-                        <Link
-                          to="/doctor/profile"
-                          className="bg-surface-container/85 border border-secondary/40 rounded-2xl p-5 hover:border-secondary transition-all flex flex-col gap-2 group shadow-lg"
-                        >
-                          <div className="w-10 h-10 rounded-xl bg-secondary/15 text-secondary flex items-center justify-center group-hover:scale-105 transition-transform">
-                            <span className="material-symbols-outlined text-[20px]">badge</span>
-                          </div>
-                          <h4 className="font-headline font-bold text-sm text-secondary">Doctor Workspace</h4>
-                          <p className="text-xs text-on-surface-variant">Credentials, availability & schedule</p>
-                        </Link>
-                      )}
-
-                      {/* Patient Portal shortcut */}
-                      {user.role === 'PATIENT' && (
-                        <Link
-                          to="/portal/dashboard"
-                          className="bg-surface-container/85 border border-secondary/40 rounded-2xl p-5 hover:border-secondary transition-all flex flex-col gap-2 group shadow-lg"
-                        >
-                          <div className="w-10 h-10 rounded-xl bg-secondary/15 text-secondary flex items-center justify-center group-hover:scale-105 transition-transform">
-                            <span className="material-symbols-outlined text-[20px]">home_health</span>
-                          </div>
-                          <h4 className="font-headline font-bold text-sm text-secondary">Patient Portal</h4>
-                          <p className="text-xs text-on-surface-variant">Telehealth appointments & records vault</p>
-                        </Link>
-                      )}
-
-                      {/* Admin Control Center shortcut */}
-                      {(user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') && (
-                        <Link
-                          to="/admin/verifications"
-                          className="bg-surface-container/85 border border-primary/40 rounded-2xl p-5 hover:border-primary transition-all flex flex-col gap-2 group shadow-lg"
-                        >
-                          <div className="w-10 h-10 rounded-xl bg-primary/15 text-primary flex items-center justify-center group-hover:scale-105 transition-transform">
-                            <span className="material-symbols-outlined text-[20px]">admin_panel_settings</span>
-                          </div>
-                          <h4 className="font-headline font-bold text-sm text-primary">Admin Control Center</h4>
-                          <p className="text-xs text-on-surface-variant">Doctor verifications & platform governance</p>
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <AuthEnclave onSuccess={handleAuthSuccess} />
-                )}
+              user?.role === 'DOCTOR' ? (
+                <Navigate to="/doctor/dashboard" replace />
+              ) : user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' ? (
+                <Navigate to="/admin/verifications" replace />
+              ) : (
+                <LandingPage currentUser={user} onLogout={handleLogout} />
+              )
+            }
+          />
+          <Route
+            path="/auth"
+            element={
+              <div className="w-full min-h-[calc(100vh-4rem)] flex flex-col justify-center items-center py-8 px-4">
+                <AuthEnclave currentUser={user} onSuccess={handleAuthSuccess} />
+              </div>
+            }
+          />
+          <Route
+            path="/login"
+            element={
+              <div className="w-full min-h-[calc(100vh-4rem)] flex flex-col justify-center items-center py-8 px-4">
+                <AuthEnclave currentUser={user} initialMode="signin" onSuccess={handleAuthSuccess} />
+              </div>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <div className="w-full min-h-[calc(100vh-4rem)] flex flex-col justify-center items-center py-8 px-4">
+                <AuthEnclave currentUser={user} initialMode="signup" onSuccess={handleAuthSuccess} />
               </div>
             }
           />
           <Route path="/doctors" element={<DoctorDirectoryPage />} />
+          <Route path="/theme-preview" element={<ThemePreviewPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage currentUser={user} />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
         </Route>
 
         {/* 2. Doctor Clinical Workspace (Role-Protected for DOCTOR) */}
@@ -158,18 +147,177 @@ export const App: React.FC = () => {
             </RoleGuard>
           }
         >
+          <Route path="/doctor" element={<DoctorDashboardPage currentUser={user} />} />
+          <Route path="/doctor/dashboard" element={<DoctorDashboardPage currentUser={user} />} />
           <Route path="/doctor/profile" element={<DoctorProfilePage currentUser={user} />} />
+          <Route
+            path="/doctor/schedule"
+            element={
+              <PlannedFeaturePage
+                title="Availability Schedule Builder"
+                category="Doctor Scheduling Engine"
+                description="Manage weekly recurring availability windows, date-specific custom overrides, slot duration parameters, and buffer times."
+                plannedFeatures={[
+                  'Day-of-week recurrence templates (Monday to Sunday)',
+                  'Custom date overrides (vacations, holidays, emergency blocks)',
+                  'Dynamic slot generator with 15/30/45/60 min granularity',
+                  'Real-time double-booking prevention',
+                ]}
+                backPath="/doctor/dashboard"
+                backLabel="Dashboard"
+                icon={CalendarClock}
+                badgeVariant="doctor"
+              />
+            }
+          />
+          <Route
+            path="/doctor/appointments"
+            element={
+              <PlannedFeaturePage
+                title="Patient Consultation Queue"
+                category="Clinical Operations"
+                description="Track upcoming appointments, confirm or reschedule requests, and manage patient consultation statuses."
+                plannedFeatures={[
+                  'Live consultation queue with status transitions',
+                  'One-click appointment confirmation & reschedule protocol',
+                  'Patient medical intake summary preview',
+                  'Automated appointment notifications and reminders',
+                ]}
+                backPath="/doctor/dashboard"
+                backLabel="Dashboard"
+                icon={Calendar}
+                badgeVariant="doctor"
+              />
+            }
+          />
+          <Route
+            path="/doctor/documents"
+            element={
+              <PlannedFeaturePage
+                title="Patient Records & Medical Files"
+                category="Medical Records & Imaging"
+                description="Securely access patient-shared lab results, clinical history, and upload signed digital prescriptions."
+                plannedFeatures={[
+                  'Private cloud storage for medical records',
+                  'Doctor-patient confidential access controls',
+                  'High-resolution PDF and medical imagery viewer',
+                  'Complete access history for patient privacy compliance',
+                ]}
+                backPath="/doctor/dashboard"
+                backLabel="Dashboard"
+                icon={FileText}
+                badgeVariant="doctor"
+              />
+            }
+          />
+          <Route
+            path="/doctor/chat"
+            element={
+              <PlannedFeaturePage
+                title="Live Telehealth Consultations"
+                category="Realtime Communication"
+                description="Real-time doctor-patient text consultation channel with active session guards and chat history."
+                plannedFeatures={[
+                  'Secure real-time encrypted messaging channel',
+                  'Active consultation window access control',
+                  'Live typing indicators and delivery receipts',
+                  'Session transcript export into medical records',
+                ]}
+                backPath="/doctor/dashboard"
+                backLabel="Dashboard"
+                icon={MessageSquare}
+                badgeVariant="doctor"
+              />
+            }
+          />
         </Route>
 
         {/* 3. Administrative Operations Portal (Role-Protected for ADMIN & SUPER_ADMIN) */}
         <Route
           element={
             <RoleGuard user={user} allowedRoles={['ADMIN', 'SUPER_ADMIN']}>
-              <AdminLayout currentUser={user} onLogout={handleLogout} />
+              <ErrorBoundary fallbackTitle="Admin Portal Error">
+                <AdminLayout currentUser={user} onLogout={handleLogout} />
+              </ErrorBoundary>
             </RoleGuard>
           }
         >
-          <Route path="/admin/verifications" element={<AdminVerificationsPage currentUser={user} />} />
+          <Route
+            path="/admin/verifications"
+            element={
+              <ErrorBoundary fallbackTitle="Verification Queue Error">
+                <AdminVerificationsPage currentUser={user} />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/admin/specialties"
+            element={
+              <ErrorBoundary fallbackTitle="Specialties Error">
+                <AdminSpecialtiesPage currentUser={user} />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/admin/bookings"
+            element={
+              <PlannedFeaturePage
+                title="Platform Booking Oversight"
+                category="Administrative Governance"
+                description="Comprehensive visibility across all platform bookings, slot states, cancellation rates, and dispute arbitrations."
+                plannedFeatures={[
+                  'Cross-platform booking search with doctor/patient filters',
+                  'Conflict arbitration and administrative slot override',
+                  'Cancellation trend analytics and platform load metrics',
+                  'Automated refund triggers on disputed cancellations',
+                ]}
+                backPath="/admin/verifications"
+                backLabel="Verifications"
+                icon={Activity}
+                badgeVariant="admin"
+              />
+            }
+          />
+          <Route
+            path="/admin/payments"
+            element={
+              <PlannedFeaturePage
+                title="Financials & Payout Ledger"
+                category="Platform Economics"
+                description="Payment processing, commission splitting, doctor escrow payouts, and financial transaction history."
+                plannedFeatures={[
+                  'Escrow settlement and doctor payout disbursements',
+                  'Platform fee deductions and commission reporting',
+                  'Instant refund issuance for cancelled appointments',
+                  'Exportable tax-compliant reconciliation ledger',
+                ]}
+                backPath="/admin/verifications"
+                backLabel="Verifications"
+                icon={CreditCard}
+                badgeVariant="admin"
+              />
+            }
+          />
+          <Route
+            path="/admin/audit"
+            element={
+              <PlannedFeaturePage
+                title="Compliance & Activity Audit Logs"
+                category="Regulatory & Clinical Compliance"
+                description="Official logs of doctor verifications, patient record access, and administrative actions for healthcare compliance."
+                plannedFeatures={[
+                  'Protected and permanent audit records',
+                  'Doctor verifications and administrative change logs',
+                  'Secure timestamps and session access history',
+                  'Automated security monitoring and compliance reports',
+                ]}
+                backPath="/admin/verifications"
+                backLabel="Verifications"
+                icon={History}
+                badgeVariant="admin"
+              />
+            }
+          />
         </Route>
 
         {/* 4. Patient Telehealth Portal (Role-Protected for PATIENT) */}
@@ -181,6 +329,86 @@ export const App: React.FC = () => {
           }
         >
           <Route path="/portal/dashboard" element={<PatientPortalPage currentUser={user} />} />
+          <Route
+            path="/portal/appointments"
+            element={
+              <PlannedFeaturePage
+                title="My Scheduled Consultations"
+                category="Patient Care"
+                description="View your confirmed and upcoming doctor consultations, reschedule slots, or request cancellations."
+                plannedFeatures={[
+                  'Upcoming and past consultation timeline',
+                  'Add to Google / Apple Calendar sync',
+                  'Pre-appointment intake questionnaire review',
+                  'Direct telehealth room launch upon consultation time',
+                ]}
+                backPath="/portal/dashboard"
+                backLabel="Dashboard"
+                icon={Calendar}
+                badgeVariant="patient"
+              />
+            }
+          />
+          <Route
+            path="/portal/records"
+            element={
+              <PlannedFeaturePage
+                title="Medical Records & Documents"
+                category="Private Health Information"
+                description="Upload and organize your lab reports, prescriptions, and test results with secure temporary doctor access."
+                plannedFeatures={[
+                  'Secure medical file uploads (PDF, scans, test reports)',
+                  'Share records with your doctor for scheduled visits',
+                  'Revoke document access anytime with 1 click',
+                  'Download your complete medical history archive',
+                ]}
+                backPath="/portal/dashboard"
+                backLabel="Dashboard"
+                icon={FileText}
+                badgeVariant="patient"
+              />
+            }
+          />
+          <Route
+            path="/portal/messages"
+            element={
+              <PlannedFeaturePage
+                title="Doctor Messages"
+                category="Direct Care Channel"
+                description="Communicate directly with your confirmed doctors regarding prescriptions, symptoms, and follow-ups."
+                plannedFeatures={[
+                  'Direct private chat with your confirmed doctor',
+                  'Share medical notes, attachments, and prescription questions',
+                  'Follow-up message history and clinical recommendations',
+                  'Consultation summary saved to your health history',
+                ]}
+                backPath="/portal/dashboard"
+                backLabel="Dashboard"
+                icon={MessageSquare}
+                badgeVariant="patient"
+              />
+            }
+          />
+          <Route
+            path="/portal/billing"
+            element={
+              <PlannedFeaturePage
+                title="Invoices & Consultation Receipts"
+                category="Patient Payments"
+                description="Secure payment history, digital receipt downloads, and insurance reimbursement invoices."
+                plannedFeatures={[
+                  'Transparent consultation fee breakdown',
+                  'Instant digital invoices with practitioner details',
+                  'Saved payment methods with bank-level security',
+                  'One-click dispute or cancellation refund requests',
+                ]}
+                backPath="/portal/dashboard"
+                backLabel="Dashboard"
+                icon={CreditCard}
+                badgeVariant="patient"
+              />
+            }
+          />
         </Route>
       </Routes>
     </BrowserRouter>
