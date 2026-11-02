@@ -136,6 +136,7 @@ export class ProfessionalRepository {
             select: {
               id: true,
               email: true,
+              isEmailVerified: true,
               patient: {
                 select: {
                   name: true,
@@ -245,6 +246,7 @@ export class ProfessionalRepository {
             select: {
               id: true,
               email: true,
+              isEmailVerified: true,
               patient: {
                 select: {
                   name: true,

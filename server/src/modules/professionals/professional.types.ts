@@ -18,6 +18,12 @@ export interface ProfessionalProfileResponseDto {
   userId: string;
   email: string;
   name: string;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    isEmailVerified: boolean;
+  };
   phone: string | null;
   profession: string;
   specialtyId: string | null;

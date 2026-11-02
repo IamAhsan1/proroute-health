@@ -1,4 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Role, UserStatus } from '@prisma/client';
+import argon2 from 'argon2';
 
 const prisma = new PrismaClient();
 
@@ -73,9 +74,70 @@ export async function seedSpecialties() {
   console.log(`Successfully seeded ${CORE_SPECIALTIES.length} core specialties.`);
 }
 
+export async function seedAdmins() {
+  console.log('Seeding Admin and Super Admin accounts...');
+
+  const argonOptions = {
+    type: argon2.argon2id,
+    memoryCost: 2 ** 16,
+    timeCost: 3,
+    parallelism: 1,
+  };
+
+  const adminHash = await argon2.hash('Admin123!', argonOptions);
+  const superAdminHash = await argon2.hash('SuperAdmin123!', argonOptions);
+
+  const adminUser = await prisma.user.upsert({
+    where: { email: 'admin@proroute.com' },
+    update: {
+      role: Role.ADMIN,
+      isEmailVerified: true,
+      status: UserStatus.ACTIVE,
+      passwordHash: adminHash,
+    },
+    create: {
+      email: 'admin@proroute.com',
+      passwordHash: adminHash,
+      role: Role.ADMIN,
+      isEmailVerified: true,
+      status: UserStatus.ACTIVE,
+      patient: {
+        create: {
+          name: 'Platform Administrator',
+        },
+      },
+    },
+  });
+  console.log(`- Upserted Admin: ${adminUser.email} (Role: ${adminUser.role})`);
+
+  const superAdminUser = await prisma.user.upsert({
+    where: { email: 'superadmin@proroute.com' },
+    update: {
+      role: Role.SUPER_ADMIN,
+      isEmailVerified: true,
+      status: UserStatus.ACTIVE,
+      passwordHash: superAdminHash,
+    },
+    create: {
+      email: 'superadmin@proroute.com',
+      passwordHash: superAdminHash,
+      role: Role.SUPER_ADMIN,
+      isEmailVerified: true,
+      status: UserStatus.ACTIVE,
+      patient: {
+        create: {
+          name: 'Root Super Administrator',
+        },
+      },
+    },
+  });
+  console.log(`- Upserted Super Admin: ${superAdminUser.email} (Role: ${superAdminUser.role})`);
+}
+
 async function main() {
   try {
     await seedSpecialties();
+    await seedAdmins();
   } catch (error) {
     console.error('Failed to seed database:', error);
     process.exit(1);

@@ -20,11 +20,19 @@ export class ProfessionalService {
   public formatProfessionalResponse(
     prof: ProfessionalWithDetails
   ): ProfessionalProfileResponseDto {
+    const doctorName = prof.user.patient?.name || 'Dr. Unknown';
+
     return {
       id: prof.id,
       userId: prof.userId,
       email: prof.user.email,
-      name: prof.user.patient?.name || 'Dr. Unknown',
+      name: doctorName,
+      user: {
+        id: prof.userId,
+        name: doctorName,
+        email: prof.user.email,
+        isEmailVerified: Boolean((prof.user as any).isEmailVerified),
+      },
       phone: prof.user.patient?.phone || null,
       profession: prof.profession,
       specialtyId: prof.specialtyId,
