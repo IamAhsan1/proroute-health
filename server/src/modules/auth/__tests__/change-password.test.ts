@@ -51,7 +51,7 @@ describe('POST /api/auth/change-password', () => {
   });
 
   it('should reject unauthenticated request with 401 Unauthorized', async () => {
-    const res = await request(app).post('/api/auth/change-password').send({
+    const res = await request(app).post('/api/v1/auth/change-password').send({
       currentPassword,
       newPassword,
     });
@@ -67,7 +67,7 @@ describe('POST /api/auth/change-password', () => {
     vi.spyOn(authRepository, 'findUserById').mockResolvedValue(getMockUser(realPasswordHash));
 
     const res = await request(app)
-      .post('/api/auth/change-password')
+      .post('/api/v1/auth/change-password')
       .set('Authorization', `Bearer ${token}`)
       .send({
         currentPassword: 'WrongPassword123!',
@@ -83,7 +83,7 @@ describe('POST /api/auth/change-password', () => {
     const token = JwtService.generateTokens(currentUser).accessToken;
 
     const res = await request(app)
-      .post('/api/auth/change-password')
+      .post('/api/v1/auth/change-password')
       .set('Authorization', `Bearer ${token}`)
       .send({
         currentPassword,
@@ -107,7 +107,7 @@ describe('POST /api/auth/change-password', () => {
       .mockResolvedValue(undefined);
 
     const res = await request(app)
-      .post('/api/auth/change-password')
+      .post('/api/v1/auth/change-password')
       .set('Authorization', `Bearer ${token}`)
       .send({
         currentPassword,

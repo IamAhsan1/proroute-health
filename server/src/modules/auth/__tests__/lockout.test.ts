@@ -62,7 +62,7 @@ describe('Brute-Force & Account Lockout Defenses', () => {
 
     // Attempts 1 to 4: wrong password -> 401 Unauthorized
     for (let i = 1; i <= 4; i++) {
-      const res = await request(app).post('/api/auth/login').send({
+      const res = await request(app).post('/api/v1/auth/login').send({
         email: testUserEmail,
         password: wrongPassword,
       });
@@ -73,7 +73,7 @@ describe('Brute-Force & Account Lockout Defenses', () => {
     expect(currentLockUntil).toBeNull();
 
     // Attempt 5: triggers lockout
-    const res5 = await request(app).post('/api/auth/login').send({
+    const res5 = await request(app).post('/api/v1/auth/login').send({
       email: testUserEmail,
       password: wrongPassword,
     });
@@ -83,7 +83,7 @@ describe('Brute-Force & Account Lockout Defenses', () => {
     expect(currentLockUntil!.getTime()).toBeGreaterThan(Date.now());
 
     // Attempt 6 (while locked): returns 403 Forbidden even with correct password
-    const res6 = await request(app).post('/api/auth/login').send({
+    const res6 = await request(app).post('/api/v1/auth/login').send({
       email: testUserEmail,
       password: correctPassword,
     });
@@ -111,7 +111,7 @@ describe('Brute-Force & Account Lockout Defenses', () => {
       createdAt: new Date(),
     });
 
-    const res = await request(app).post('/api/auth/login').send({
+    const res = await request(app).post('/api/v1/auth/login').send({
       email: testUserEmail,
       password: correctPassword,
     });
@@ -143,7 +143,7 @@ describe('Brute-Force & Account Lockout Defenses', () => {
       createdAt: new Date(),
     });
 
-    const res = await request(app).post('/api/auth/login').send({
+    const res = await request(app).post('/api/v1/auth/login').send({
       email: testUserEmail,
       password: correctPassword,
     });

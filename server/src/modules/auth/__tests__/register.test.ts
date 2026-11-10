@@ -59,7 +59,7 @@ describe('POST /api/auth/register', () => {
       createdAt: new Date(),
     });
 
-    const res = await request(app).post('/api/auth/register').send(validPatient);
+    const res = await request(app).post('/api/v1/auth/register').send(validPatient);
 
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
@@ -98,7 +98,7 @@ describe('POST /api/auth/register', () => {
       professional: null,
     });
 
-    const res = await request(app).post('/api/auth/register').send(validPatient);
+    const res = await request(app).post('/api/v1/auth/register').send(validPatient);
 
     expect(res.status).toBe(409);
     expect(res.body.success).toBe(false);
@@ -111,7 +111,7 @@ describe('POST /api/auth/register', () => {
       password: 'weakpassword',
     };
 
-    const res = await request(app).post('/api/auth/register').send(invalidData);
+    const res = await request(app).post('/api/v1/auth/register').send(invalidData);
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
@@ -124,7 +124,7 @@ describe('POST /api/auth/register', () => {
       password: 'A1!' + 'a'.repeat(130), // 133 chars
     };
 
-    const res = await request(app).post('/api/auth/register').send(invalidData);
+    const res = await request(app).post('/api/v1/auth/register').send(invalidData);
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
@@ -138,7 +138,7 @@ describe('POST /api/auth/register', () => {
       role: 'ADMIN',
     };
 
-    const res = await request(app).post('/api/auth/register').send(privilegedData);
+    const res = await request(app).post('/api/v1/auth/register').send(privilegedData);
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
@@ -151,7 +151,7 @@ describe('POST /api/auth/register', () => {
       role: 'SUPER_ADMIN',
     };
 
-    const res = await request(app).post('/api/auth/register').send(privilegedData);
+    const res = await request(app).post('/api/v1/auth/register').send(privilegedData);
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
@@ -164,7 +164,7 @@ describe('POST /api/auth/register', () => {
       new Error('Database transaction deadlocked or connection reset')
     );
 
-    const res = await request(app).post('/api/auth/register').send(validPatient);
+    const res = await request(app).post('/api/v1/auth/register').send(validPatient);
 
     expect(res.status).toBe(500);
     expect(res.body.success).toBe(false);

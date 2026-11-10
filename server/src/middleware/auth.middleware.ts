@@ -19,6 +19,10 @@ export const authenticate = (
 
   try {
     const payload = JwtService.verifyAccessToken(token);
+
+    // TODO(Phase-04, Plan 04-03): Check Redis `user:revoked_before:${payload.id}` against token `iat`
+    // to collapse the 15-minute access token invalidation window to 0.0 seconds upon password change or "logout from all devices".
+
     if (payload.status === 'SUSPENDED') {
       res.status(403).json({
         success: false,

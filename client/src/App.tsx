@@ -9,16 +9,17 @@ import { DoctorLayout } from './layouts/DoctorLayout';
 import { AdminLayout } from './layouts/AdminLayout';
 import { PatientLayout } from './layouts/PatientLayout';
 import { DoctorDirectoryPage } from './modules/public';
+import { DoctorDetailPage } from './modules/public/pages/DoctorDetailPage';
 import { LandingPage } from './modules/public/pages/LandingPage';
 import { ThemePreviewPage } from './modules/public/pages/ThemePreviewPage';
 import { DoctorDashboardPage, DoctorProfilePage } from './modules/doctor';
+import { DoctorSchedulePage } from './modules/doctor/pages/DoctorSchedulePage';
 import { AdminVerificationsPage, AdminSpecialtiesPage } from './modules/admin';
 import { PatientPortalPage } from './modules/patient';
 import { VerifyEmailPage, ResetPasswordPage } from './modules/auth';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { PlannedFeaturePage } from './components/PlannedFeaturePage';
 import {
-  CalendarClock,
   Calendar,
   FileText,
   MessageSquare,
@@ -134,6 +135,7 @@ export const App: React.FC = () => {
             }
           />
           <Route path="/doctors" element={<DoctorDirectoryPage />} />
+          <Route path="/doctors/:id" element={<DoctorDetailPage />} />
           <Route path="/theme-preview" element={<ThemePreviewPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage currentUser={user} />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -150,26 +152,7 @@ export const App: React.FC = () => {
           <Route path="/doctor" element={<DoctorDashboardPage currentUser={user} />} />
           <Route path="/doctor/dashboard" element={<DoctorDashboardPage currentUser={user} />} />
           <Route path="/doctor/profile" element={<DoctorProfilePage currentUser={user} />} />
-          <Route
-            path="/doctor/schedule"
-            element={
-              <PlannedFeaturePage
-                title="Availability Schedule Builder"
-                category="Doctor Scheduling Engine"
-                description="Manage weekly recurring availability windows, date-specific custom overrides, slot duration parameters, and buffer times."
-                plannedFeatures={[
-                  'Day-of-week recurrence templates (Monday to Sunday)',
-                  'Custom date overrides (vacations, holidays, emergency blocks)',
-                  'Dynamic slot generator with 15/30/45/60 min granularity',
-                  'Real-time double-booking prevention',
-                ]}
-                backPath="/doctor/dashboard"
-                backLabel="Dashboard"
-                icon={CalendarClock}
-                badgeVariant="doctor"
-              />
-            }
-          />
+          <Route path="/doctor/schedule" element={<DoctorSchedulePage />} />
           <Route
             path="/doctor/appointments"
             element={

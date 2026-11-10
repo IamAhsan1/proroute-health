@@ -64,6 +64,7 @@ export class AuthService {
     });
 
     // Non-blocking dispatch: sends activation email in background
+    // TODO(Phase-04, Plan 04-03): Migrate to BullMQ emailQueue for persistent retries, backoff, and outbound rate limiting.
     void this.email
       .sendVerificationEmail(createdUser.email, rawVerificationToken)
       .catch((err: unknown) => {
@@ -245,6 +246,7 @@ export class AuthService {
     await this.repo.setPasswordResetToken(user.id, tokenHash, expiresAt);
 
     // Non-blocking asynchronous dispatch: prevents SMTP latency from leaking existence via timing
+    // TODO(Phase-04, Plan 04-03): Migrate to BullMQ emailQueue for persistent retries and backoff.
     void this.email
       .sendPasswordResetEmail(user.email, rawToken)
       .catch((err: unknown) => {
@@ -319,6 +321,7 @@ export class AuthService {
 
     const newPasswordHash = await Argon2Service.hashPassword(input.newPassword);
     await this.repo.updatePasswordAndRevokeSessions(user.id, newPasswordHash);
+    // TODO(Phase-04, Plan 04-03): Set Redis `user:revoked_before:${user.id} = Date.now()` to instantly collapse the 15m access token window to 0.0s.
 
     // Non-blocking security alert email
     void this.email

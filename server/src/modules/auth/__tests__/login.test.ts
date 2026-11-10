@@ -51,6 +51,7 @@ describe('POST /api/auth/login', () => {
         credentialDocumentUrl: null,
         rejectionReason: null,
         verifiedAt: new Date(),
+        timezone: 'Asia/Karachi',
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -66,7 +67,7 @@ describe('POST /api/auth/login', () => {
       createdAt: new Date(),
     });
 
-    const res = await request(app).post('/api/auth/login').send(credentials);
+    const res = await request(app).post('/api/v1/auth/login').send(credentials);
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -106,7 +107,7 @@ describe('POST /api/auth/login', () => {
     });
     vi.spyOn(authRepository, 'incrementFailedLoginAttempts').mockResolvedValue({} as any);
 
-    const res = await request(app).post('/api/auth/login').send({
+    const res = await request(app).post('/api/v1/auth/login').send({
       email: credentials.email,
       password: 'IncorrectPassword999!',
     });
@@ -119,7 +120,7 @@ describe('POST /api/auth/login', () => {
   it('should reject login for non-existent email with 401 Unauthorized', async () => {
     vi.spyOn(authRepository, 'findUserByEmail').mockResolvedValue(null);
 
-    const res = await request(app).post('/api/auth/login').send({
+    const res = await request(app).post('/api/v1/auth/login').send({
       email: 'nonexistent@example.com',
       password: 'SomePassword123!',
     });
@@ -129,7 +130,7 @@ describe('POST /api/auth/login', () => {
   });
 
   it('should reject login with password exceeding 128 characters with 400 Bad Request', async () => {
-    const res = await request(app).post('/api/auth/login').send({
+    const res = await request(app).post('/api/v1/auth/login').send({
       email: credentials.email,
       password: 'A1!' + 'x'.repeat(130),
     });
@@ -162,7 +163,7 @@ describe('POST /api/auth/login', () => {
       professional: null,
     });
 
-    const res = await request(app).post('/api/auth/login').send(credentials);
+    const res = await request(app).post('/api/v1/auth/login').send(credentials);
 
     expect(res.status).toBe(403);
     expect(res.body.success).toBe(false);

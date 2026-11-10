@@ -70,7 +70,7 @@ describe('POST /api/auth/logout and POST /api/auth/refresh', () => {
     });
 
     const res = await request(app)
-      .post('/api/auth/refresh')
+      .post('/api/v1/auth/refresh')
       .set('Cookie', [`refresh_token=${tokens.refreshToken}`]);
 
     expect(res.status).toBe(200);
@@ -99,7 +99,7 @@ describe('POST /api/auth/logout and POST /api/auth/refresh', () => {
     });
 
     const res = await request(app)
-      .post('/api/auth/refresh')
+      .post('/api/v1/auth/refresh')
       .set('Cookie', [`refresh_token=${tokens.refreshToken}`]);
 
     expect(res.status).toBe(401);
@@ -131,7 +131,7 @@ describe('POST /api/auth/logout and POST /api/auth/refresh', () => {
     });
 
     const res = await request(app)
-      .post('/api/auth/logout')
+      .post('/api/v1/auth/logout')
       .set('Cookie', [`refresh_token=${tokens.refreshToken}`]);
 
     expect(res.status).toBe(200);
@@ -200,8 +200,8 @@ describe('POST /api/auth/logout and POST /api/auth/refresh', () => {
 
     // Execute concurrently
     const [res1, res2] = await Promise.all([
-      request(app).post('/api/auth/refresh').set('Cookie', [`refresh_token=${tokens.refreshToken}`]),
-      request(app).post('/api/auth/refresh').set('Cookie', [`refresh_token=${tokens.refreshToken}`]),
+      request(app).post('/api/v1/auth/refresh').set('Cookie', [`refresh_token=${tokens.refreshToken}`]),
+      request(app).post('/api/v1/auth/refresh').set('Cookie', [`refresh_token=${tokens.refreshToken}`]),
     ]);
 
     const statuses = [res1.status, res2.status].sort();

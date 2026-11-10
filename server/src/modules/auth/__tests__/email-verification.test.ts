@@ -53,7 +53,7 @@ describe('Email Verification Endpoints', () => {
         .spyOn(authRepository, 'verifyUserEmail')
         .mockResolvedValue({ ...mockUser, isEmailVerified: true });
 
-      const res = await request(app).get(`/api/auth/verify-email?token=${rawToken}`);
+      const res = await request(app).get(`/api/v1/auth/verify-email?token=${rawToken}`);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -66,7 +66,7 @@ describe('Email Verification Endpoints', () => {
         new BadRequestError('Email verification token is invalid or has expired')
       );
 
-      const res = await request(app).get('/api/auth/verify-email?token=expired-or-fake');
+      const res = await request(app).get('/api/v1/auth/verify-email?token=expired-or-fake');
 
       expect(res.status).toBe(400);
       expect(res.body.success).toBe(false);
@@ -74,7 +74,7 @@ describe('Email Verification Endpoints', () => {
     });
 
     it('should reject request when token parameter is missing', async () => {
-      const res = await request(app).get('/api/auth/verify-email');
+      const res = await request(app).get('/api/v1/auth/verify-email');
 
       expect(res.status).toBe(400);
       expect(res.body.success).toBe(false);
@@ -94,7 +94,7 @@ describe('Email Verification Endpoints', () => {
         .mockResolvedValue({ ...mockUser, isEmailVerified: true });
 
       const res = await request(app)
-        .post('/api/auth/verify-email')
+        .post('/api/v1/auth/verify-email')
         .send({ token: rawToken });
 
       expect(res.status).toBe(200);
@@ -114,7 +114,7 @@ describe('Email Verification Endpoints', () => {
         .mockResolvedValue(undefined);
 
       const res = await request(app)
-        .post('/api/auth/resend-verification')
+        .post('/api/v1/auth/resend-verification')
         .send({ email: 'patient@example.com' });
 
       expect(res.status).toBe(200);
@@ -131,7 +131,7 @@ describe('Email Verification Endpoints', () => {
         .mockResolvedValue(undefined);
 
       const res = await request(app)
-        .post('/api/auth/resend-verification')
+        .post('/api/v1/auth/resend-verification')
         .send({ email: 'nonexistent@example.com' });
 
       expect(res.status).toBe(200);
@@ -150,7 +150,7 @@ describe('Email Verification Endpoints', () => {
         .mockResolvedValue(undefined);
 
       const res = await request(app)
-        .post('/api/auth/resend-verification')
+        .post('/api/v1/auth/resend-verification')
         .send({ email: 'patient@example.com' });
 
       expect(res.status).toBe(200);
@@ -160,7 +160,7 @@ describe('Email Verification Endpoints', () => {
 
     it('should reject invalid email format with 400 Bad Request', async () => {
       const res = await request(app)
-        .post('/api/auth/resend-verification')
+        .post('/api/v1/auth/resend-verification')
         .send({ email: 'invalid-email' });
 
       expect(res.status).toBe(400);

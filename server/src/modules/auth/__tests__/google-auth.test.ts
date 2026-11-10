@@ -69,7 +69,7 @@ describe('POST /api/auth/google', () => {
     });
 
     const res = await request(app)
-      .post('/api/auth/google')
+      .post('/api/v1/auth/google')
       .send({ idToken: 'valid-google-id-token' });
 
     expect(res.status).toBe(200);
@@ -135,7 +135,7 @@ describe('POST /api/auth/google', () => {
     });
 
     const res = await request(app)
-      .post('/api/auth/google')
+      .post('/api/v1/auth/google')
       .send({ idToken: 'valid-google-id-token' });
 
     expect(res.status).toBe(200);
@@ -149,7 +149,7 @@ describe('POST /api/auth/google', () => {
     );
 
     const res = await request(app)
-      .post('/api/auth/google')
+      .post('/api/v1/auth/google')
       .send({ idToken: 'invalid-or-fake-token' });
 
     expect(res.status).toBe(401);
@@ -166,7 +166,7 @@ describe('POST /api/auth/google', () => {
     );
 
     const res = await request(app)
-      .post('/api/auth/google')
+      .post('/api/v1/auth/google')
       .send({ idToken: 'valid-token-unverified-email' });
 
     expect(res.status).toBe(401);
@@ -175,7 +175,7 @@ describe('POST /api/auth/google', () => {
   });
 
   it('should return 400 Bad Request when idToken is missing', async () => {
-    const res = await request(app).post('/api/auth/google').send({});
+    const res = await request(app).post('/api/v1/auth/google').send({});
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);

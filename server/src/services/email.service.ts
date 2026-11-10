@@ -8,6 +8,11 @@ export interface EmailOptions {
   text?: string;
 }
 
+/**
+ * EmailService: Core transactional email delivery adapter.
+ * NOTE(Phase-04, Plan 04-03): Direct calls will be encapsulated in BullMQ job workers
+ * for persistent message retries, exponential backoffs, and outbound SMTP rate-limiting.
+ */
 export class EmailService {
   private transporter: Transporter | null = null;
   private isEthereal = false;
@@ -115,7 +120,7 @@ export class EmailService {
   }
 
   public async sendVerificationEmail(to: string, rawToken: string): Promise<void> {
-    const verificationUrl = `${config.CORS_ORIGIN}/verify-email?token=${rawToken}`;
+    const verificationUrl = `${config.CLIENT_URL}/verify-email?token=${rawToken}`;
     const subject = 'Verify your ProRoute Health account';
     const html = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1e293b; background-color: #f8fafc; border-radius: 8px;">
@@ -149,7 +154,7 @@ export class EmailService {
   }
 
   public async sendPasswordResetEmail(to: string, rawToken: string): Promise<void> {
-    const resetUrl = `${config.CORS_ORIGIN}/reset-password?token=${rawToken}`;
+    const resetUrl = `${config.CLIENT_URL}/reset-password?token=${rawToken}`;
     const subject = 'Reset your ProRoute password';
     const html = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1e293b; background-color: #f8fafc; border-radius: 8px;">

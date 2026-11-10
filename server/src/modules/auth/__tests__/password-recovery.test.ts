@@ -52,7 +52,7 @@ describe('Password Recovery Endpoints', () => {
         .mockResolvedValue(undefined);
 
       const res = await request(app)
-        .post('/api/auth/forgot-password')
+        .post('/api/v1/auth/forgot-password')
         .send({ email: 'patient@example.com' });
 
       expect(res.status).toBe(200);
@@ -69,7 +69,7 @@ describe('Password Recovery Endpoints', () => {
         .mockResolvedValue(undefined);
 
       const res = await request(app)
-        .post('/api/auth/forgot-password')
+        .post('/api/v1/auth/forgot-password')
         .send({ email: 'unknown@example.com' });
 
       expect(res.status).toBe(200);
@@ -80,7 +80,7 @@ describe('Password Recovery Endpoints', () => {
 
     it('should reject invalid email format with 400 Bad Request', async () => {
       const res = await request(app)
-        .post('/api/auth/forgot-password')
+        .post('/api/v1/auth/forgot-password')
         .send({ email: 'not-an-email' });
 
       expect(res.status).toBe(400);
@@ -103,7 +103,7 @@ describe('Password Recovery Endpoints', () => {
         .spyOn(emailService, 'sendPasswordChangedAlert')
         .mockResolvedValue(undefined);
 
-      const res = await request(app).post('/api/auth/reset-password').send({
+      const res = await request(app).post('/api/v1/auth/reset-password').send({
         token: rawToken,
         newPassword: 'NewSecurePassword123!',
       });
@@ -120,7 +120,7 @@ describe('Password Recovery Endpoints', () => {
         new BadRequestError('Password reset token is invalid or has expired')
       );
 
-      const res = await request(app).post('/api/auth/reset-password').send({
+      const res = await request(app).post('/api/v1/auth/reset-password').send({
         token: 'expired-or-fake-token',
         newPassword: 'NewSecurePassword123!',
       });
@@ -143,11 +143,11 @@ describe('Password Recovery Endpoints', () => {
       vi.spyOn(emailService, 'sendPasswordChangedAlert').mockResolvedValue(undefined);
 
       const [res1, res2] = await Promise.all([
-        request(app).post('/api/auth/reset-password').send({
+        request(app).post('/api/v1/auth/reset-password').send({
           token: rawToken,
           newPassword: 'NewPassword1!',
         }),
-        request(app).post('/api/auth/reset-password').send({
+        request(app).post('/api/v1/auth/reset-password').send({
           token: rawToken,
           newPassword: 'NewPassword2!',
         }),

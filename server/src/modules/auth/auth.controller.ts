@@ -26,12 +26,12 @@ export const setAuthCookies = (res: Response, tokens: AuthTokens): void => {
     maxAge: 15 * 60 * 1000, // 15 minutes
   });
 
-  // Refresh Token Cookie (7 days, scoped to /api/auth)
+  // Refresh Token Cookie (7 days, scoped to /api/v1/auth)
   res.cookie('refresh_token', tokens.refreshToken, {
     httpOnly: true,
     secure: isProd,
     sameSite: 'strict',
-    path: '/api/auth',
+    path: '/api/v1/auth',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 };
@@ -47,7 +47,7 @@ export const clearAuthCookies = (res: Response): void => {
     httpOnly: true,
     secure: isProd,
     sameSite: 'strict',
-    path: '/api/auth',
+    path: '/api/v1/auth',
   });
 };
 
