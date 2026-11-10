@@ -25,6 +25,7 @@ describe('Public Doctor Directory API (GET /api/doctors)', () => {
     credentialDocumentUrl: 'https://docs.example.com/license.pdf',
     rejectionReason: null,
     verifiedAt: new Date(),
+    timezone: 'Asia/Karachi',
     createdAt: new Date(),
     updatedAt: new Date(),
     user: {
@@ -48,7 +49,7 @@ describe('Public Doctor Directory API (GET /api/doctors)', () => {
       total: 1,
     });
 
-    const res = await request(app).get('/api/doctors');
+    const res = await request(app).get('/api/v1/doctors');
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -65,7 +66,7 @@ describe('Public Doctor Directory API (GET /api/doctors)', () => {
     });
 
     const res = await request(app)
-      .get('/api/doctors?specialty=cardiology&search=Sarah&minFee=100&maxFee=200&page=1&limit=10');
+      .get('/api/v1/doctors?specialty=cardiology&search=Sarah&minFee=100&maxFee=200&page=1&limit=10');
 
     expect(res.status).toBe(200);
     expect(findSpy).toHaveBeenCalledWith({
@@ -84,7 +85,7 @@ describe('Public Doctor Directory API (GET /api/doctors)', () => {
       total: 0,
     });
 
-    const res = await request(app).get('/api/doctors?specialty=neurology');
+    const res = await request(app).get('/api/v1/doctors?specialty=neurology');
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -97,7 +98,7 @@ describe('Public Doctor Directory API (GET /api/doctors)', () => {
   });
 
   it('should reject requests with limit exceeding 50 with 400 Bad Request', async () => {
-    const res = await request(app).get('/api/doctors?limit=51');
+    const res = await request(app).get('/api/v1/doctors?limit=51');
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
@@ -105,7 +106,7 @@ describe('Public Doctor Directory API (GET /api/doctors)', () => {
   });
 
   it('should reject requests with negative consultation fee with 400 Bad Request', async () => {
-    const res = await request(app).get('/api/doctors?minFee=-10');
+    const res = await request(app).get('/api/v1/doctors?minFee=-10');
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);

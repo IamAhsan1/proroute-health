@@ -6,7 +6,7 @@ import { JwtService } from '../../auth/jwt.service.js';
 import { Role } from '@prisma/client';
 import { UserWithProfile } from '../../auth/auth.repository.js';
 
-describe('IDOR/BOLA Protection — /api/users/me', () => {
+describe('IDOR/BOLA Protection — /api/v1/users/me', () => {
   const app = createApp();
 
   beforeEach(() => {
@@ -79,8 +79,8 @@ describe('IDOR/BOLA Protection — /api/users/me', () => {
     professional: null,
   };
 
-  it('should reject unauthenticated request to /api/users/me with 401 Unauthorized', async () => {
-    const res = await request(app).get('/api/users/me');
+  it('should reject unauthenticated request to /api/v1/users/me with 401 Unauthorized', async () => {
+    const res = await request(app).get('/api/v1/users/me');
     expect(res.status).toBe(401);
     expect(res.body.success).toBe(false);
   });
@@ -94,7 +94,7 @@ describe('IDOR/BOLA Protection — /api/users/me', () => {
       return null;
     });
 
-    const res = await request(app).get('/api/users/me').set('Authorization', `Bearer ${tokenA}`);
+    const res = await request(app).get('/api/v1/users/me').set('Authorization', `Bearer ${tokenA}`);
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -117,7 +117,7 @@ describe('IDOR/BOLA Protection — /api/users/me', () => {
     vi.spyOn(userRepository, 'updateProfile').mockResolvedValue(updatedUserA);
 
     const res = await request(app)
-      .patch('/api/users/me')
+      .patch('/api/v1/users/me')
       .set('Authorization', `Bearer ${tokenA}`)
       .send({ name: 'User A Updated' });
 
@@ -127,12 +127,12 @@ describe('IDOR/BOLA Protection — /api/users/me', () => {
     expect(userRepository.updateProfile).toHaveBeenCalledWith(userA.id, { name: 'User A Updated' });
   });
 
-  it('IDOR Defense: confirms that attempting to request User B by URL parameter /api/users/:id fails (404/not routed)', async () => {
+  it('IDOR Defense: confirms that attempting to request User B by URL parameter /api/v1/users/:id fails (404/not routed)', async () => {
     const tokenA = JwtService.generateTokens(userA).accessToken;
 
     // Attacker User A attempts to tamper with endpoint using User B's UUID
     const res = await request(app)
-      .get(`/api/users/${userB.id}`)
+      .get(`/api/v1/users/${userB.id}`)
       .set('Authorization', `Bearer ${tokenA}`);
 
     // Because private resources ONLY exist under /me, direct ID targeting is completely unrouted

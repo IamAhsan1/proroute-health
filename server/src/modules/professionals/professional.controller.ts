@@ -7,6 +7,15 @@ import {
   ProfessionalService,
 } from './professional.service.js';
 import { updateProfessionalProfileSchema } from './professional.types.js';
+import { availabilityRepository } from '../availability/availability.repository.js';
+import { expandDoctorSlots } from '../availability/slot-expansion.service.js';
+import { NotFoundError } from '../../utils/apiErrors.js';
+import { VerificationStatus } from '@prisma/client';
+
+const doctorSlotsQuerySchema = z.object({
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid startDate format').optional(),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid endDate format').optional(),
+});
 
 const doctorSearchQuerySchema = z.object({
   specialty: z.string().optional(),
@@ -105,6 +114,60 @@ export class ProfessionalController {
         total: result.total,
         page: result.page,
         limit: result.limit,
+      },
+    });
+  });
+
+  public getDoctorById = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = adminActionParamsSchema.parse(req.params);
+    const doctor = await this.service.getApprovedDoctorById(id);
+    res.status(200).json({
+      success: true,
+      data: doctor,
+    });
+  });
+
+  public getDoctorSlots = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = adminActionParamsSchema.parse(req.params);
+    const query = doctorSlotsQuerySchema.parse(req.query);
+
+    const doctor = await this.service.getApprovedDoctorById(id);
+    if (!doctor) {
+      throw new NotFoundError('Doctor not found or not active');
+    }
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const fourteenDaysLater = new Date(Date.now() + 13 * 86400000).toISOString().slice(0, 10);
+
+    const startDateStr = query.startDate || todayStr;
+    const endDateStr = query.endDate || fourteenDaysLater;
+
+    const [rules, overrides] = await Promise.all([
+      availabilityRepository.getAvailabilities(doctor.id),
+      availabilityRepository.getOverrides(
+        doctor.id,
+        new Date(startDateStr + 'T00:00:00.000Z'),
+        new Date(endDateStr + 'T23:59:59.999Z')
+      ),
+    ]);
+
+    const slots = expandDoctorSlots({
+      timezone: doctor.timezone || 'Asia/Karachi',
+      rules,
+      overrides,
+      startDateStr,
+      endDateStr,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        doctorId: doctor.id,
+        doctorName: doctor.name,
+        specialty: doctor.specialty?.name || null,
+        consultationFee: doctor.consultationFee,
+        timezone: doctor.timezone || 'Asia/Karachi',
+        slots,
       },
     });
   });

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PublicDoctor } from '../../../services/doctor.service';
 import {
   Stethoscope,
@@ -38,6 +39,7 @@ interface DoctorCardProps {
 }
 
 export const DoctorCard: React.FC<DoctorCardProps> = ({ doc, onBookSlot }) => {
+  const navigate = useNavigate();
   const SpecialtyIcon = getSpecialtyLucideIcon(doc.specialty?.slug);
 
   return (
@@ -103,7 +105,13 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({ doc, onBookSlot }) => {
 
         <button
           type="button"
-          onClick={() => onBookSlot?.(doc)}
+          onClick={() => {
+            if (onBookSlot) {
+              onBookSlot(doc);
+            } else {
+              navigate(`/doctors/${doc.id}`);
+            }
+          }}
           className="px-4 py-2 rounded-xl text-xs font-semibold bg-primary text-on-primary hover:bg-primary/90 shadow-md shadow-primary/20 transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
         >
           <Calendar className="w-3.5 h-3.5" />

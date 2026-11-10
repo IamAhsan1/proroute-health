@@ -39,6 +39,10 @@ axiosInstance.interceptors.response.use(
 
     // Do not attempt refresh on auth endpoints (login, register, refresh itself)
     const isAuthEndpoint =
+      originalRequest?.url?.includes('/api/v1/auth/login') ||
+      originalRequest?.url?.includes('/api/v1/auth/register') ||
+      originalRequest?.url?.includes('/api/v1/auth/refresh') ||
+      originalRequest?.url?.includes('/api/v1/auth/logout') ||
       originalRequest?.url?.includes('/api/auth/login') ||
       originalRequest?.url?.includes('/api/auth/register') ||
       originalRequest?.url?.includes('/api/auth/refresh') ||
@@ -59,7 +63,7 @@ axiosInstance.interceptors.response.use(
 
       try {
         // Attempt silent rotation via HttpOnly refresh cookie
-        await axiosInstance.post('/api/auth/refresh');
+        await axiosInstance.post('/api/v1/auth/refresh');
         processQueue(null);
         return axiosInstance(originalRequest);
       } catch (refreshErr) {

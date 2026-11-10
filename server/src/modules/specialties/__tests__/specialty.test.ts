@@ -38,7 +38,7 @@ describe('Specialties API', () => {
     it('should return list of all active specialties with 200 OK', async () => {
       vi.spyOn(specialtyRepository, 'findAllActive').mockResolvedValue(mockSpecialties);
 
-      const res = await request(app).get('/api/specialties');
+      const res = await request(app).get('/api/v1/specialties');
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -50,7 +50,7 @@ describe('Specialties API', () => {
     it('should return empty list when no active specialties exist', async () => {
       vi.spyOn(specialtyRepository, 'findAllActive').mockResolvedValue([]);
 
-      const res = await request(app).get('/api/specialties');
+      const res = await request(app).get('/api/v1/specialties');
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -58,11 +58,11 @@ describe('Specialties API', () => {
     });
   });
 
-  describe('GET /api/specialties/:slug', () => {
+  describe('GET /api/v1/specialties/:slug', () => {
     it('should return specific specialty by slug with 200 OK', async () => {
       vi.spyOn(specialtyRepository, 'findBySlug').mockResolvedValue(mockSpecialties[0]);
 
-      const res = await request(app).get('/api/specialties/cardiology');
+      const res = await request(app).get('/api/v1/specialties/cardiology');
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -73,7 +73,7 @@ describe('Specialties API', () => {
     it('should return 404 Not Found when specialty slug does not exist', async () => {
       vi.spyOn(specialtyRepository, 'findBySlug').mockResolvedValue(null);
 
-      const res = await request(app).get('/api/specialties/non-existent-specialty');
+      const res = await request(app).get('/api/v1/specialties/non-existent-specialty');
 
       expect(res.status).toBe(404);
       expect(res.body.success).toBe(false);
@@ -86,7 +86,7 @@ describe('Specialties API', () => {
         isActive: false,
       });
 
-      const res = await request(app).get('/api/specialties/cardiology');
+      const res = await request(app).get('/api/v1/specialties/cardiology');
 
       expect(res.status).toBe(404);
       expect(res.body.success).toBe(false);

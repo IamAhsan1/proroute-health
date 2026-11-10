@@ -36,9 +36,13 @@ export const logger = pino({
 export const httpLogger = pinoHttp({
   logger,
   autoLogging: !isTest,
+  genReqId: (req) => (req.headers['x-request-id'] as string) || (req as any).id || crypto.randomUUID(),
   customLogLevel: (_req, res, err) => {
     if (res.statusCode >= 500 || err) return 'error';
     if (res.statusCode >= 400) return 'warn';
     return 'info';
   },
+  customProps: (req) => ({
+    requestId: (req as any).id,
+  }),
 });

@@ -1,26 +1,64 @@
 import { app } from './app.js';
 import { config } from './config/index.js';
 import { prisma } from './lib/prisma.js';
+import { logger } from './lib/logger.js';
 
 const server = app.listen(config.PORT, () => {
-  console.log(`🚀 ProRoute API Server running on port ${config.PORT} [${config.NODE_ENV}]`);
+  logger.info(`🚀 ProRoute API Server running on port ${config.PORT} [${config.NODE_ENV}]`);
 });
 
-const gracefulShutdown = async (signal: string) => {
-  console.log(`\nReceived ${signal}. Shutting down gracefully...`);
-  server.close(async () => {
-    console.log('HTTP server closed.');
-    await prisma.$disconnect();
-    console.log('Database client disconnected.');
-    process.exit(0);
-  });
+let isShuttingDown = false;
 
-  // Force exit after 10s if stuck
-  setTimeout(() => {
-    console.error('Forcefully terminating server after timeout.');
+const gracefulShutdown = async (signal: string, exitCode = 0) => {
+  if (isShuttingDown) {
+    logger.warn(`Shutdown already in progress. Ignoring duplicate signal: ${signal}`);
+    return;
+  }
+  isShuttingDown = true;
+
+  logger.info(`Received ${signal}. Starting graceful shutdown...`);
+
+  // Fail-safe force exit after 10s if in-flight requests or DB hangs
+  const forceExitTimer = setTimeout(() => {
+    logger.error('Graceful shutdown timeout exceeded (10s). Forcefully terminating process.');
     process.exit(1);
   }, 10000);
+  forceExitTimer.unref();
+
+  try {
+    // 1. Connection Draining: Stop accepting new requests and finish in-flight requests
+    await new Promise<void>((resolve, reject) => {
+      server.close((err) => {
+        if (err) return reject(err);
+        resolve();
+      });
+    });
+    logger.info('HTTP server closed. All in-flight requests completed.');
+
+    // 2. Resource Cleanup: Disconnect database pool safely
+    await prisma.$disconnect();
+    logger.info('Database client disconnected cleanly.');
+
+    logger.info(`Graceful shutdown completed successfully. Exiting with code ${exitCode}.`);
+    process.exit(exitCode);
+  } catch (err: unknown) {
+    logger.error({ err }, 'Error occurred during graceful shutdown. Exiting with failure code 1.');
+    process.exit(1);
+  }
 };
 
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+// Process Termination Signals
+process.on('SIGINT', () => gracefulShutdown('SIGINT', 0));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM', 0));
+
+// Process Fatal Failure Listeners
+process.on('unhandledRejection', (reason: unknown) => {
+  logger.fatal({ err: reason }, 'Unhandled Promise Rejection detected in process.');
+  gracefulShutdown('unhandledRejection', 1);
+});
+
+process.on('uncaughtException', (err: Error) => {
+  logger.fatal({ err }, 'Uncaught Exception detected in process.');
+  gracefulShutdown('uncaughtException', 1);
+});
+

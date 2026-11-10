@@ -41,6 +41,7 @@ export interface ProfessionalProfileResponseDto {
   credentialDocumentUrl: string | null;
   rejectionReason: string | null;
   verifiedAt: Date | null;
+  timezone: string;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -174,59 +174,59 @@ async function request<T>(endpoint: string, options: { method?: string; data?: u
 
 export const api = {
   register: (payload: RegisterPayload) =>
-    request<ApiResponse<{ user: UserProfile; accessToken: string }>>('/api/auth/register', {
+    request<ApiResponse<{ user: UserProfile; accessToken: string }>>('/api/v1/auth/register', {
       method: 'POST',
       data: payload,
     }),
 
   login: (payload: LoginPayload) =>
-    request<ApiResponse<{ user: UserProfile; accessToken: string }>>('/api/auth/login', {
+    request<ApiResponse<{ user: UserProfile; accessToken: string }>>('/api/v1/auth/login', {
       method: 'POST',
       data: payload,
     }),
 
   logout: () =>
-    request<ApiResponse<{ message: string }>>('/api/auth/logout', {
+    request<ApiResponse<{ message: string }>>('/api/v1/auth/logout', {
       method: 'POST',
     }),
 
   getMe: () =>
-    request<ApiResponse<UserProfile>>('/api/users/me', {
+    request<ApiResponse<UserProfile>>('/api/v1/users/me', {
       method: 'GET',
     }),
 
   forgotPassword: (payload: ForgotPasswordPayload) =>
-    request<ApiResponse<{ message: string }>>('/api/auth/forgot-password', {
+    request<ApiResponse<{ message: string }>>('/api/v1/auth/forgot-password', {
       method: 'POST',
       data: payload,
     }),
 
   resetPassword: (payload: ResetPasswordPayload) =>
-    request<ApiResponse<{ message: string }>>('/api/auth/reset-password', {
+    request<ApiResponse<{ message: string }>>('/api/v1/auth/reset-password', {
       method: 'POST',
       data: payload,
     }),
 
   verifyEmail: (payload: VerifyEmailPayload) =>
-    request<ApiResponse<{ message: string }>>('/api/auth/verify-email', {
+    request<ApiResponse<{ message: string }>>('/api/v1/auth/verify-email', {
       method: 'POST',
       data: payload,
     }),
 
   resendVerification: (payload: ResendVerificationPayload) =>
-    request<ApiResponse<{ message: string }>>('/api/auth/resend-verification', {
+    request<ApiResponse<{ message: string }>>('/api/v1/auth/resend-verification', {
       method: 'POST',
       data: payload,
     }),
 
   googleAuth: (payload: GoogleAuthPayload) =>
-    request<ApiResponse<{ user: UserProfile; accessToken: string }>>('/api/auth/google', {
+    request<ApiResponse<{ user: UserProfile; accessToken: string }>>('/api/v1/auth/google', {
       method: 'POST',
       data: payload,
     }),
 
   changePassword: (payload: ChangePasswordPayload) =>
-    request<ApiResponse<{ message: string }>>('/api/auth/change-password', {
+    request<ApiResponse<{ message: string }>>('/api/v1/auth/change-password', {
       method: 'POST',
       data: payload,
     }),

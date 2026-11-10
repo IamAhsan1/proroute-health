@@ -53,6 +53,7 @@ export class ProfessionalService {
       credentialDocumentUrl: prof.credentialDocumentUrl,
       rejectionReason: prof.rejectionReason,
       verifiedAt: prof.verifiedAt,
+      timezone: prof.timezone || 'Asia/Karachi',
       createdAt: prof.createdAt,
       updatedAt: prof.updatedAt,
     };
@@ -175,6 +176,14 @@ export class ProfessionalService {
       page,
       limit,
     };
+  }
+
+  public async getApprovedDoctorById(id: string): Promise<ProfessionalProfileResponseDto> {
+    const doctor = await this.repo.findById(id);
+    if (!doctor || doctor.verificationStatus !== VerificationStatus.APPROVED) {
+      throw new NotFoundError('Doctor not found or not currently available');
+    }
+    return this.formatProfessionalResponse(doctor);
   }
 }
 

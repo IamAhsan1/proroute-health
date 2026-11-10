@@ -51,6 +51,7 @@ describe('Professional Profile API (/api/professionals)', () => {
     credentialDocumentUrl: 'https://example.com/docs/license.pdf',
     rejectionReason: null,
     verifiedAt: null,
+    timezone: 'Asia/Karachi',
     createdAt: new Date(),
     updatedAt: new Date(),
     user: {
@@ -68,12 +69,12 @@ describe('Professional Profile API (/api/professionals)', () => {
     },
   };
 
-  describe('GET /api/professionals/me', () => {
+  describe('GET /api/v1/professionals/me', () => {
     it('should return doctor profile for authenticated doctor', async () => {
       vi.spyOn(professionalRepository, 'findByUserId').mockResolvedValue(mockDoctorProfile);
 
       const res = await request(app)
-        .get('/api/professionals/me')
+        .get('/api/v1/professionals/me')
         .set('Authorization', `Bearer ${verifiedDoctorToken}`);
 
       expect(res.status).toBe(200);
@@ -85,7 +86,7 @@ describe('Professional Profile API (/api/professionals)', () => {
 
     it('should reject access if user is a Patient with 403 Forbidden', async () => {
       const res = await request(app)
-        .get('/api/professionals/me')
+        .get('/api/v1/professionals/me')
         .set('Authorization', `Bearer ${patientToken}`);
 
       expect(res.status).toBe(403);
@@ -94,14 +95,14 @@ describe('Professional Profile API (/api/professionals)', () => {
     });
 
     it('should reject unauthenticated request with 401 Unauthorized', async () => {
-      const res = await request(app).get('/api/professionals/me');
+      const res = await request(app).get('/api/v1/professionals/me');
 
       expect(res.status).toBe(401);
       expect(res.body.success).toBe(false);
     });
   });
 
-  describe('PATCH /api/professionals/me', () => {
+  describe('PATCH /api/v1/professionals/me', () => {
     it('should update doctor profile and credentials when email is verified', async () => {
       vi.spyOn(professionalRepository, 'findByUserId').mockResolvedValue(mockDoctorProfile);
       vi.spyOn(specialtyRepository, 'findById').mockResolvedValue({
@@ -120,7 +121,7 @@ describe('Professional Profile API (/api/professionals)', () => {
       });
 
       const res = await request(app)
-        .patch('/api/professionals/me')
+        .patch('/api/v1/professionals/me')
         .set('Authorization', `Bearer ${verifiedDoctorToken}`)
         .send({
           bio: 'Updated bio description',
@@ -134,7 +135,7 @@ describe('Professional Profile API (/api/professionals)', () => {
 
     it('should reject profile mutation when doctor email is not verified with 403 Forbidden', async () => {
       const res = await request(app)
-        .patch('/api/professionals/me')
+        .patch('/api/v1/professionals/me')
         .set('Authorization', `Bearer ${unverifiedDoctorToken}`)
         .send({
           bio: 'Updated bio',
@@ -161,12 +162,13 @@ describe('Professional Profile API (/api/professionals)', () => {
         credentialDocumentUrl: null,
         rejectionReason: null,
         verifiedAt: null,
+    timezone: 'Asia/Karachi',
         createdAt: new Date(),
         updatedAt: new Date(),
       });
 
       const res = await request(app)
-        .patch('/api/professionals/me')
+        .patch('/api/v1/professionals/me')
         .set('Authorization', `Bearer ${verifiedDoctorToken}`)
         .send({
           licenseNumber: 'TAKEN-LICENSE-123',
@@ -182,7 +184,7 @@ describe('Professional Profile API (/api/professionals)', () => {
       vi.spyOn(specialtyRepository, 'findById').mockResolvedValue(null);
 
       const res = await request(app)
-        .patch('/api/professionals/me')
+        .patch('/api/v1/professionals/me')
         .set('Authorization', `Bearer ${verifiedDoctorToken}`)
         .send({
           specialtyId: '00000000-0000-0000-0000-000000000000',

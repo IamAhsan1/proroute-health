@@ -50,6 +50,7 @@ describe('Admin Doctor Verification API (/api/admin/doctors)', () => {
     credentialDocumentUrl: 'https://docs.example.com/license.pdf',
     rejectionReason: null,
     verifiedAt: null,
+    timezone: 'Asia/Karachi',
     createdAt: new Date(),
     updatedAt: new Date(),
     user: {
@@ -70,7 +71,7 @@ describe('Admin Doctor Verification API (/api/admin/doctors)', () => {
   describe('Authorization & RBAC', () => {
     it('should reject non-admin doctor with 403 Forbidden', async () => {
       const res = await request(app)
-        .get('/api/admin/doctors/pending')
+        .get('/api/v1/admin/doctors/pending')
         .set('Authorization', `Bearer ${doctorToken}`);
 
       expect(res.status).toBe(403);
@@ -80,7 +81,7 @@ describe('Admin Doctor Verification API (/api/admin/doctors)', () => {
 
     it('should reject patient with 403 Forbidden', async () => {
       const res = await request(app)
-        .get('/api/admin/doctors/pending')
+        .get('/api/v1/admin/doctors/pending')
         .set('Authorization', `Bearer ${patientToken}`);
 
       expect(res.status).toBe(403);
@@ -89,14 +90,14 @@ describe('Admin Doctor Verification API (/api/admin/doctors)', () => {
     });
 
     it('should reject unauthenticated request with 401 Unauthorized', async () => {
-      const res = await request(app).get('/api/admin/doctors/pending');
+      const res = await request(app).get('/api/v1/admin/doctors/pending');
 
       expect(res.status).toBe(401);
       expect(res.body.success).toBe(false);
     });
   });
 
-  describe('GET /api/admin/doctors/pending', () => {
+  describe('GET /api/v1/admin/doctors/pending', () => {
     it('should return pending doctors with pagination metadata for admin', async () => {
       vi.spyOn(professionalRepository, 'findPending').mockResolvedValue({
         items: [mockPendingDoctor],
@@ -104,7 +105,7 @@ describe('Admin Doctor Verification API (/api/admin/doctors)', () => {
       });
 
       const res = await request(app)
-        .get('/api/admin/doctors/pending')
+        .get('/api/v1/admin/doctors/pending')
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(res.status).toBe(200);
@@ -119,7 +120,7 @@ describe('Admin Doctor Verification API (/api/admin/doctors)', () => {
 
     it('should reject requests with limit exceeding 50 with 400 Bad Request', async () => {
       const res = await request(app)
-        .get('/api/admin/doctors/pending?limit=51')
+        .get('/api/v1/admin/doctors/pending?limit=51')
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(res.status).toBe(400);
@@ -134,7 +135,7 @@ describe('Admin Doctor Verification API (/api/admin/doctors)', () => {
 
     it('should reject requests with limit less than 1 with 400 Bad Request', async () => {
       const res = await request(app)
-        .get('/api/admin/doctors/pending?limit=0')
+        .get('/api/v1/admin/doctors/pending?limit=0')
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(res.status).toBe(400);
@@ -149,7 +150,7 @@ describe('Admin Doctor Verification API (/api/admin/doctors)', () => {
 
     it('should reject requests with page less than 1 with 400 Bad Request', async () => {
       const res = await request(app)
-        .get('/api/admin/doctors/pending?page=-1')
+        .get('/api/v1/admin/doctors/pending?page=-1')
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(res.status).toBe(400);
@@ -164,7 +165,7 @@ describe('Admin Doctor Verification API (/api/admin/doctors)', () => {
 
     it('should reject non-numeric pagination parameters with 400 Bad Request', async () => {
       const res = await request(app)
-        .get('/api/admin/doctors/pending?page=abc&limit=xyz')
+        .get('/api/v1/admin/doctors/pending?page=abc&limit=xyz')
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(res.status).toBe(400);
@@ -179,7 +180,7 @@ describe('Admin Doctor Verification API (/api/admin/doctors)', () => {
       });
 
       const res = await request(app)
-        .get('/api/admin/doctors/pending?page=3&limit=25')
+        .get('/api/v1/admin/doctors/pending?page=3&limit=25')
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(res.status).toBe(200);
@@ -188,7 +189,7 @@ describe('Admin Doctor Verification API (/api/admin/doctors)', () => {
     });
   });
 
-  describe('PATCH /api/admin/doctors/:id/approve', () => {
+  describe('PATCH /api/v1/admin/doctors/:id/approve', () => {
     it('should approve doctor with valid license and update status to APPROVED', async () => {
       vi.spyOn(professionalRepository, 'findById').mockResolvedValue(mockPendingDoctor);
       vi.spyOn(professionalRepository, 'updateVerificationStatus').mockResolvedValue({
@@ -198,7 +199,7 @@ describe('Admin Doctor Verification API (/api/admin/doctors)', () => {
       });
 
       const res = await request(app)
-        .patch(`/api/admin/doctors/${mockPendingDoctor.id}/approve`)
+        .patch(`/api/v1/admin/doctors/${mockPendingDoctor.id}/approve`)
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(res.status).toBe(200);
@@ -214,7 +215,7 @@ describe('Admin Doctor Verification API (/api/admin/doctors)', () => {
       });
 
       const res = await request(app)
-        .patch(`/api/admin/doctors/${mockPendingDoctor.id}/approve`)
+        .patch(`/api/v1/admin/doctors/${mockPendingDoctor.id}/approve`)
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(res.status).toBe(400);
@@ -223,7 +224,7 @@ describe('Admin Doctor Verification API (/api/admin/doctors)', () => {
     });
   });
 
-  describe('PATCH /api/admin/doctors/:id/reject', () => {
+  describe('PATCH /api/v1/admin/doctors/:id/reject', () => {
     it('should reject doctor and record rejection reason', async () => {
       vi.spyOn(professionalRepository, 'findById').mockResolvedValue(mockPendingDoctor);
       vi.spyOn(professionalRepository, 'updateVerificationStatus').mockResolvedValue({
@@ -233,7 +234,7 @@ describe('Admin Doctor Verification API (/api/admin/doctors)', () => {
       });
 
       const res = await request(app)
-        .patch(`/api/admin/doctors/${mockPendingDoctor.id}/reject`)
+        .patch(`/api/v1/admin/doctors/${mockPendingDoctor.id}/reject`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           rejectionReason: 'Medical license document is blurry and unreadable.',
@@ -247,7 +248,7 @@ describe('Admin Doctor Verification API (/api/admin/doctors)', () => {
 
     it('should validate rejectionReason length and return 400 if too short', async () => {
       const res = await request(app)
-        .patch(`/api/admin/doctors/${mockPendingDoctor.id}/reject`)
+        .patch(`/api/v1/admin/doctors/${mockPendingDoctor.id}/reject`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           rejectionReason: 'No',

@@ -97,7 +97,7 @@ export const doctorService = {
     page?: number;
     limit?: number;
   }): Promise<{ doctors: PublicDoctor[]; pagination: PaginationMeta }> {
-    const res = await axiosInstance.get<PaginatedApiResponse<PublicDoctor>>('/api/doctors', { params });
+    const res = await axiosInstance.get<PaginatedApiResponse<PublicDoctor>>('/api/v1/doctors', { params });
     return {
       doctors: res.data.data,
       pagination: res.data.pagination,
@@ -106,18 +106,18 @@ export const doctorService = {
 
   // Doctor authenticated /me endpoints
   async getMyDoctorProfile(): Promise<DoctorProfile> {
-    const res = await axiosInstance.get<ApiResponse<DoctorProfile>>('/api/professionals/me');
+    const res = await axiosInstance.get<ApiResponse<DoctorProfile>>('/api/v1/professionals/me');
     return res.data.data;
   },
 
   async updateMyDoctorProfile(payload: UpdateDoctorProfilePayload): Promise<DoctorProfile> {
-    const res = await axiosInstance.patch<ApiResponse<DoctorProfile>>('/api/professionals/me', payload);
+    const res = await axiosInstance.patch<ApiResponse<DoctorProfile>>('/api/v1/professionals/me', payload);
     return res.data.data;
   },
 
   // Admin verification endpoints
   async getPendingDoctors(page = 1, limit = 20): Promise<{ pendingDoctors: PendingDoctor[]; pagination: PaginationMeta }> {
-    const res = await axiosInstance.get<PaginatedApiResponse<PendingDoctor>>('/api/admin/doctors/pending', {
+    const res = await axiosInstance.get<PaginatedApiResponse<PendingDoctor>>('/api/v1/admin/doctors/pending', {
       params: { page, limit },
     });
     return {
@@ -127,12 +127,12 @@ export const doctorService = {
   },
 
   async approveDoctor(professionalId: string): Promise<ApiResponse<DoctorProfile>> {
-    const res = await axiosInstance.patch<ApiResponse<DoctorProfile>>(`/api/admin/doctors/${professionalId}/approve`);
+    const res = await axiosInstance.patch<ApiResponse<DoctorProfile>>(`/api/v1/admin/doctors/${professionalId}/approve`);
     return res.data;
   },
 
   async rejectDoctor(professionalId: string, rejectionReason: string): Promise<ApiResponse<DoctorProfile>> {
-    const res = await axiosInstance.patch<ApiResponse<DoctorProfile>>(`/api/admin/doctors/${professionalId}/reject`, {
+    const res = await axiosInstance.patch<ApiResponse<DoctorProfile>>(`/api/v1/admin/doctors/${professionalId}/reject`, {
       rejectionReason,
     });
     return res.data;

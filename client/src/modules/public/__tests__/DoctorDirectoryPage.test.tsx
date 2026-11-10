@@ -50,10 +50,10 @@ describe('DoctorDirectoryPage Component', () => {
 
   it('renders doctor cards correctly when data is returned from API', async () => {
     vi.spyOn(axiosInstance, 'get').mockImplementation(async (url: string) => {
-      if (url === '/api/specialties') {
+      if (url === '/api/v1/specialties' || url === '/api/specialties') {
         return { data: { success: true, data: mockSpecialties } };
       }
-      if (url === '/api/doctors') {
+      if (url === '/api/v1/doctors' || url === '/api/doctors') {
         return {
           data: {
             success: true,
@@ -89,10 +89,10 @@ describe('DoctorDirectoryPage Component', () => {
 
   it('renders empty state when no doctors match query', async () => {
     vi.spyOn(axiosInstance, 'get').mockImplementation(async (url: string) => {
-      if (url === '/api/specialties') {
+      if (url === '/api/v1/specialties' || url === '/api/specialties') {
         return { data: { success: true, data: mockSpecialties } };
       }
-      if (url === '/api/doctors') {
+      if (url === '/api/v1/doctors' || url === '/api/doctors') {
         return {
           data: {
             success: true,
