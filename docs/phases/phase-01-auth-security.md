@@ -212,26 +212,26 @@ All endpoints return uniform response payloads:
 }
 ```
 
-### 5.1 Authentication Routes (`/api/auth`)
+### 5.1 Authentication Routes (`/api/v1/auth`)
 | Method | Endpoint | Protection | Rate Limit | Description |
 |---|---|---|---|---|
-| `POST` | `/api/auth/register` | Public | 5 req / 15m | Register Patient or Doctor account |
-| `POST` | `/api/auth/login` | Public | 5 req / 15m | Authenticate with credentials |
-| `POST` | `/api/auth/google` | Public | 5 req / 15m | Google OAuth 2.0 exchange & account linking |
-| `POST` | `/api/auth/refresh` | Cookie / Header | - | Rotate refresh token and issue fresh token pair |
-| `POST` | `/api/auth/logout` | Cookie / Header | - | Revoke refresh token and clear HttpOnly cookies |
-| `POST` | `/api/auth/forgot-password` | Public | 5 req / 15m | Request password recovery email |
-| `POST` | `/api/auth/reset-password` | Public | 5 req / 15m | Submit new password with secure reset token |
-| `GET` | `/api/auth/verify-email` | Public | - | Verify email via URL token (redirects to client) |
-| `POST` | `/api/auth/verify-email` | Public | - | Verify email via JSON body |
-| `POST` | `/api/auth/resend-verification` | Public | 2 req / 5m | Resend email verification link |
-| `POST` | `/api/auth/change-password` | JWT Authenticated | - | Change password and revoke all active sessions |
+| `POST` | `/api/v1/auth/register` | Public | 5 req / 15m | Register Patient or Doctor account |
+| `POST` | `/api/v1/auth/login` | Public | 5 req / 15m | Authenticate with credentials |
+| `POST` | `/api/v1/auth/google` | Public | 5 req / 15m | Google OAuth 2.0 exchange & account linking |
+| `POST` | `/api/v1/auth/refresh` | Cookie / Header | - | Rotate refresh token and issue fresh token pair |
+| `POST` | `/api/v1/auth/logout` | Cookie / Header | - | Revoke refresh token and clear HttpOnly cookies |
+| `POST` | `/api/v1/auth/forgot-password` | Public | 5 req / 15m | Request password recovery email |
+| `POST` | `/api/v1/auth/reset-password` | Public | 5 req / 15m | Submit new password with secure reset token |
+| `GET` | `/api/v1/auth/verify-email` | Public | - | Verify email via URL token (redirects to client) |
+| `POST` | `/api/v1/auth/verify-email` | Public | - | Verify email via JSON body |
+| `POST` | `/api/v1/auth/resend-verification` | Public | 2 req / 5m | Resend email verification link |
+| `POST` | `/api/v1/auth/change-password` | JWT Authenticated | - | Change password and revoke all active sessions |
 
-### 5.2 User Routes (`/api/users`)
+### 5.2 User Routes (`/api/v1/users`)
 | Method | Endpoint | Protection | Description |
 |---|---|---|---|
-| `GET` | `/api/users/me` | JWT Authenticated | Retrieve authenticated user profile |
-| `PATCH` | `/api/users/me` | JWT Authenticated | Update authenticated user profile (atomic single query) |
+| `GET` | `/api/v1/users/me` | JWT Authenticated | Retrieve authenticated user profile |
+| `PATCH` | `/api/v1/users/me` | JWT Authenticated | Update authenticated user profile (atomic single query) |
 
 ---
 

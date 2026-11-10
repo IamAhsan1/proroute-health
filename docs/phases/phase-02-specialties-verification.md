@@ -35,11 +35,11 @@ server/src/modules/
 │   └── specialty.types.ts
 └── professionals/              # Doctor profiles, verification & directory
     ├── __tests__/               # 18 integration tests across 3 suites
-    ├── admin.routes.ts          # /api/admin/doctors/* (Protected RBAC)
-    ├── doctor.routes.ts         # /api/doctors (Public discovery)
+    ├── admin.routes.ts          # /api/v1/admin/doctors/* (Protected RBAC)
+    ├── doctor.routes.ts         # /api/v1/doctors (Public discovery)
     ├── professional.controller.ts
     ├── professional.repository.ts
-    ├── professional.routes.ts   # /api/professionals/me (Doctor private)
+    ├── professional.routes.ts   # /api/v1/professionals/me (Doctor private)
     ├── professional.service.ts
     └── professional.types.ts
 ```
@@ -150,7 +150,7 @@ Automated, idempotent seeder (`server/prisma/seed.ts`) populates the 7 core spec
   - ✓ Returns 404 Not Found when specialty exists but `isActive` is false.
 - **Doctor Profile Suite (`professional.test.ts` - 7 tests):**
   - ✓ Returns doctor profile for authenticated doctor.
-  - ✓ Rejects patient access to `/api/professionals/me` with 403 Forbidden.
+  - ✓ Rejects patient access to `/api/v1/professionals/me` with 403 Forbidden.
   - ✓ Rejects unauthenticated requests with 401 Unauthorized.
   - ✓ Updates doctor profile and credentials when email is verified.
   - ✓ Rejects profile mutation when doctor email is unverified with 403 Forbidden (`requireVerifiedEmail`).
