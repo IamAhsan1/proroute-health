@@ -16,6 +16,7 @@
    - [Phase 1: Architecture Foundation, Auth & Security Hardening](#phase-1-architecture-foundation-auth--security-hardening)
    - [Phase 2: Specialties & Professional Doctor Verification](#phase-2-specialties--professional-doctor-verification)
    - [Phase 3: Doctor Availability & Weekly Slot Management](#phase-3-doctor-availability--weekly-slot-management)
+   - [Phase 4: Concurrency-Safe Booking Lifecycle](#phase-4-concurrency-safe-booking-lifecycle)
 6. [Architectural Hardening & Production Reliability](#6-architectural-hardening--production-reliability)
    - [Canonical REST API Versioning (`/api/v1`)](#canonical-rest-api-versioning-apiv1)
    - [Deep Health Checks & Neon Database Probing](#deep-health-checks--neon-database-probing)
@@ -23,7 +24,6 @@
    - [Distributed Request & Correlation Tracking (`x-request-id`)](#distributed-request--correlation-tracking-x-request-id)
    - [Zero-Downtime Enterprise Graceful Shutdown](#zero-downtime-enterprise-graceful-shutdown)
 7. [Upcoming Milestone Previews](#7-upcoming-milestone-previews)
-   - [Phase 4: Concurrency-Safe Booking & Lifecycle State Machine](#phase-4-concurrency-safe-booking--lifecycle-state-machine)
    - [Phase 5: Payment Strategy, Webhooks & Idempotency](#phase-5-payment-strategy-webhooks--idempotency)
    - [Phase 6: Private Medical Document Management with Amazon S3](#phase-6-private-medical-document-management-with-amazon-s3)
    - [Phase 7: Real-Time Authenticated In-Appointment Communication](#phase-7-real-time-authenticated-in-appointment-communication)
@@ -129,7 +129,7 @@ ProRoute follows a 10-phase Full-Stack Vertical Slice milestone execution plan (
 | **01** | Architecture Foundation, Core Auth & Security | Backend + Auth UI Slice | **COMPLETED (100% Verified)** | [`docs/phases/phase-01-auth-security.md`](./phases/phase-01-auth-security.md) |
 | **02** | Specialties & Professional Doctor Verification | Backend + Directory/Profile/Admin UI | **COMPLETED (100% Verified)** | [`docs/phases/phase-02-specialties-verification.md`](./phases/phase-02-specialties-verification.md) |
 | **03** | Doctor Availability & Weekly Slot Management | Backend + Slot Picker Calendar UI | **COMPLETED (100% Verified)** | [`docs/phases/phase-03-doctor-availability-scheduling.md`](./phases/phase-03-doctor-availability-scheduling.md) |
-| **04** | Concurrency-Safe Booking & Lifecycle State Machine | Backend + Booking Workflow UI | Planned | Roadmap Phase 4 |
+| **04** | Concurrency-Safe Booking Lifecycle | Backend + Booking & Consultation Queue UI | **COMPLETED (100% Verified)** | [`docs/phases/phase-04-concurrency-safe-booking-lifecycle.md`](./phases/phase-04-concurrency-safe-booking-lifecycle.md) |
 | **05** | Payment Strategy, Webhooks & Idempotency | Backend + Checkout & Receipt UI | Planned | Roadmap Phase 5 |
 | **06** | Private Medical Document Management with Amazon S3 | Backend + S3 Document Vault UI | Planned | Roadmap Phase 6 |
 | **07** | Real-Time Authenticated In-Appointment Communication | Socket.IO + Consultation Chat UI | Planned | Roadmap Phase 7 |
@@ -178,6 +178,20 @@ ProRoute follows a 10-phase Full-Stack Vertical Slice milestone execution plan (
   - Frontend vertical slice: Doctor Schedule Dashboard (`/doctor/schedule`) and Patient Slot Booking Picker on Doctor Detail (`/doctors/:id`).
   - Full Test Suite: **21 test files, 120/120 passing tests (100% green)**, 4 client test suites / 13 passing tests.
 
+### Phase 4: Concurrency-Safe Booking Lifecycle
+- **Completed:** 2026-11-18
+- **Detailed Report:** See [Phase 4 Specification Document](./phases/phase-04-concurrency-safe-booking-lifecycle.md).
+- **Key Highlights:**
+  - Two-tier concurrency control: Application-level `SELECT ... FOR UPDATE` row locks on `Professional` inside `prisma.$transaction`, combined with an immutable PostgreSQL partial unique index (`Appointment_active_slot_unique_idx`) on active slots.
+  - Race-defense test verified: 5 parallel concurrent booking requests yield exactly 1 success (201 Created) and 4 rejections (409 Conflict with `SLOT_ALREADY_BOOKED`).
+  - Anti-hoarding & patient overlap guards: Max 2 pending holds per patient, zero overlap across active appointments (`PATIENT_TIME_CONFLICT`).
+  - Deterministic state machine governing `PENDING`, `CONFIRMED`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED`, `EXPIRED`, `NO_SHOW` with explicit transitions.
+  - Policy-enforced cancellation: 2-hour advance cancellation window for confirmed consultations; mandatory clinical reason for doctor cancellations.
+  - Asynchronous 15-minute hold expiration worker with BullMQ and Redis, plus resilient in-memory fallback for lightweight environments.
+  - Instant JWT access token revocation via Redis-backed `user:revoked_before` timestamps upon global logout or password reset.
+  - Complete frontend vertical slice: `BookingConfirmModal` with 409 conflict auto-recovery, Patient Consultation Dashboard (`/portal/appointments`), Doctor Consultation Queue (`/doctor/appointments`), and policy-aware `CancelAppointmentModal`.
+  - Full Test Suite: **27 server test files (153 passing tests) + 9 client test files (33 passing tests) = 186/186 passing tests (100% green)**.
+
 ---
 
 ## 6. Architectural Hardening & Production Reliability
@@ -217,16 +231,6 @@ Post-Phase 3 architectural hardening brought enterprise resilience and operation
 
 ## 7. Upcoming Milestone Previews
 
-### Phase 4: Concurrency-Safe Booking & Lifecycle State Machine
-- **Objectives:**
-  - Appointment booking lifecycle state machine (`PENDING -> CONFIRMED -> IN_PROGRESS -> COMPLETED | CANCELLED | NO_SHOW`).
-  - **Serializable / `SELECT FOR UPDATE` PostgreSQL transactions** ensuring two concurrent patients cannot double-book the same slot.
-  - **Redis + BullMQ Queue Infrastructure:**
-    - 15-minute delayed expiration queue for unconfirmed slot reservations.
-    - Persistent email & notification dispatch queue with exponential backoff retries and outbound rate limiting (migrating from in-memory promises).
-    - Redis instant access token invalidation (`user:revoked_before`) collapsing the 15-minute window to 0.0 seconds upon password change or "Logout from All Devices".
-  - Interactive booking modal, confirmation screens, and cancellation workflows.
-
 ### Phase 5: Payment Strategy, Webhooks & Idempotency
 - **Objectives:**
   - Stripe Checkout & Elements integration with pre-authorization holds.
@@ -238,6 +242,7 @@ Post-Phase 3 architectural hardening brought enterprise resilience and operation
   - Encrypted Amazon S3 bucket storage with private access policies.
   - Short-lived presigned download URLs with strict ownership validation (IDOR/BOLA protection).
   - Secure patient intake forms and doctor clinical notes upload.
+  - Upgrade Doctor credential verification (`credentialDocumentUrl`) from raw URL input to S3 PDF upload with Admin signed-URL preview, plus Profile Picture (`avatarUrl`) S3 upload for Doctors & Patients.
 
 ### Phase 7: Real-Time Authenticated In-Appointment Communication
 - **Objectives:**

@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React" />
   <img src="https://img.shields.io/badge/Vite-5.x-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
   <img src="https://img.shields.io/badge/PostgreSQL-Neon_Serverless-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
-  <img src="https://img.shields.io/badge/Tests-143%20Passed-brightgreen?style=for-the-badge&logo=vitest&logoColor=white" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-186%20Passed-brightgreen?style=for-the-badge&logo=vitest&logoColor=white" alt="Tests" />
   <img src="https://img.shields.io/badge/Security-IDOR%20Protected-8A2BE2?style=for-the-badge&logo=shield&logoColor=white" alt="Security" />
 </p>
 
@@ -40,17 +40,19 @@ flowchart TD
         UserMod["Users & /me Scoping (/api/v1/users)"]
         ProfMod["Professionals & Verification (/api/v1/professionals)"]
         AvailMod["Dynamic Slot Expansion Engine (/api/v1/doctor/availability)"]
+        ApptMod["Appointments & Concurrency Engine (/api/v1/appointments)"]
         ErrH["Centralized AppError & Prisma Sanitizer"]
         AuthM --> AuthMod
         AuthM --> UserMod
         AuthM --> ProfMod
         AuthM --> AvailMod
+        AuthM --> ApptMod
     end
 
     subgraph DataStorage ["Data & Persistence Layer"]
         Prisma["Prisma ORM 5.22.0"]
         NeonDB[("PostgreSQL (AWS Neon Serverless)")]
-        RedisQueue[("Redis + BullMQ (Phase 4 Planned)")]
+        RedisQueue[("Redis + BullMQ (Hold Expiration & Workers)")]
         BackendModules --> Prisma --> NeonDB
         BackendModules -.-> RedisQueue
     end
@@ -78,7 +80,20 @@ flowchart TD
 - **Multi-Timezone Determinism:** Day of week evaluated at UTC midday with DST boundary offset convergence. Supports instant browser timezone auto-detection and Clinic vs Local patient toggle.
 - **Healthcare Safety Window:** Enforces a minimum 2-hour advance booking notice and a maximum 14-day discovery query horizon.
 
-### 4. Production Hardening & Security Standards
+### 4. Concurrency-Safe Booking Lifecycle & Queues (Phase 4)
+- **Two-Tier Concurrency Control (SEC-04):** Application-level `SELECT ... FOR UPDATE` serialization row locks combined with an immutable PostgreSQL partial unique index (`Appointment_active_slot_unique_idx`) prevents double-bookings under parallel contention.
+- **Race Defense Verified:** 5 parallel concurrent HTTP requests tested: exactly 1 wins (`201 Created`) and 4 competing requests are rejected with `409 Conflict (SLOT_ALREADY_BOOKED)`.
+- **Deterministic State Machine:** Explicit lifecycle transitions (`PENDING -> CONFIRMED -> IN_PROGRESS -> COMPLETED | CANCELLED | NO_SHOW`).
+- **Anti-Hoarding & Overlap Protection:** Capped at max 2 pending holds per patient with zero overlap across active bookings (`PATIENT_TIME_CONFLICT`).
+- **Hold Expiration Background Worker:** BullMQ + Redis delayed worker releases abandoned reservation holds after 15 minutes, immediately restoring slot availability.
+- **Instant JWT Revocation:** Redis-backed `user:revoked_before` check collapsing token lifespan to 0.0s upon global logout or password reset.
+- **Clinical Policy Protection:** 2-hour advance cancellation window for confirmed consultations; mandatory clinical reason for doctor cancellations.
+
+### 5. International Dual Currency & UI Modernization
+- **PKR & USD Dual Currency Switcher:** 1-click header pill switcher (`[ PKR | USD ]`) in `Navbar.tsx` powered by `CurrencyContext.tsx` with live forex rates from open exchange API and 1-hour caching.
+- **Consistent Layout Shell:** Shared `DashboardShell.tsx` with persistent collapsed sidebar state and mobile drawer navigation.
+
+### 6. Production Hardening & Security Standards
 - **Canonical API Versioning:** All endpoints strictly versioned under `/api/v1`.
 - **Global Rate Limiting:** 300 requests / 15 min in production (2000 req / 15 min in dev/test) with RFC draft-7 `RateLimit-*` headers and bypass for health probes.
 - **Deep Database Health Check (`GET /health`):** Probes PostgreSQL connectivity via raw SQL queries, returning 503 Service Unavailable on database disconnect.
@@ -146,8 +161,15 @@ ProRoute1/
 | `GET` | `/api/v1/professionals` | Public | Filter verified doctors by specialty, city, fee |
 | `GET` | `/api/v1/doctor/availability` | Doctor (`/me`) | Retrieve doctor's weekly schedules and overrides |
 | `PUT` | `/api/v1/doctor/availability` | Doctor (`/me`) | Bulk update recurring schedule windows & durations |
+| `GET` | `/api/v1/doctor/availability/overrides` | Doctor (`/me`) | Retrieve custom date overrides and blackouts |
 | `POST` | `/api/v1/doctor/availability/overrides` | Doctor (`/me`) | Create date-specific custom override / blackout |
-| `GET` | `/api/v1/professionals/:id/slots` | Public | Dynamic slot expansion for booking within date range |
+| `GET` | `/api/v1/doctors/:id/slots` | Public | Dynamic slot expansion for booking within date range |
+| `POST` | `/api/v1/appointments` | Patient | Concurrency-safe slot reservation (auto-confirms if free) |
+| `GET` | `/api/v1/appointments/me` | Authenticated | List appointments scoped to caller's role (patient/doctor) |
+| `GET` | `/api/v1/appointments/:id` | Participant | Get detailed appointment record with status history |
+| `PATCH` | `/api/v1/appointments/:id/cancel` | Participant | Cancel consultation (enforcing 2-hour policy & doctor reasons) |
+| `PATCH` | `/api/v1/appointments/:id/confirm` | Participant | Pre-Phase 5 confirmation bridge for holds with fee |
+| `PATCH` | `/api/v1/appointments/:id/status` | Doctor | Transition consultation status (`IN_PROGRESS`, `COMPLETED`, `NO_SHOW`) |
 
 ---
 
