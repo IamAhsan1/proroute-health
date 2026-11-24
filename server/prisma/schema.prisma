@@ -48,19 +48,28 @@ model User {
 }
 
 model Patient {
-  id        String   @id @default(uuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name      String
-  phone     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                    String    @id @default(uuid())
+  userId                String    @unique
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name                  String
+  phone                 String?
+  dateOfBirth           DateTime? @db.Date
+  gender                String?
+  bloodGroup            String?
+  allergies             String?
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  appointments          Appointment[]
 }
 
 model Professional {
   id                    String             @id @default(uuid())
   userId                String             @unique
   user                  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name                  String?
   profession            String             @default("DOCTOR")
   specialtyId           String?
   specialty             Specialty?         @relation(fields: [specialtyId], references: [id], onDelete: SetNull)
@@ -79,6 +88,7 @@ model Professional {
 
   availabilities        DoctorAvailability[]
   scheduleOverrides     DoctorScheduleOverride[]
+  appointments          Appointment[]
 
   @@index([verificationStatus])
   @@index([specialtyId])
@@ -140,4 +150,55 @@ model RefreshToken {
   createdAt DateTime @default(now())
 
   @@index([userId])
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  EXPIRED
+  NO_SHOW
+}
+
+model Appointment {
+  id                 String            @id @default(uuid())
+  patientId          String
+  patient            Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  professionalId     String
+  professional       Professional      @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  startTimeUtc       DateTime
+  endTimeUtc         DateTime
+  status             AppointmentStatus @default(PENDING)
+  consultationFee    Decimal?          @db.Decimal(10, 2)
+  notes              String?
+  cancellationReason String?
+  cancelledByRole    Role?
+  cancelledAt        DateTime?
+  expiresAt          DateTime?
+  confirmedAt        DateTime?
+  startedAt          DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  statusHistory      AppointmentStatusHistory[]
+
+  @@index([patientId, startTimeUtc])
+  @@index([professionalId, startTimeUtc])
+  @@index([status, expiresAt])
+}
+
+model AppointmentStatusHistory {
+  id            String             @id @default(uuid())
+  appointmentId String
+  appointment   Appointment        @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  fromStatus    AppointmentStatus?
+  toStatus      AppointmentStatus
+  changedBy     String?
+  reason        String?
+  createdAt     DateTime           @default(now())
+
+  @@index([appointmentId])
 }
