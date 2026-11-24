@@ -19,6 +19,7 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
   SENDGRID_API_KEY: z.string().optional(),
   GOOGLE_CLIENT_ID: z.string().default('mock-google-client-id.apps.googleusercontent.com'),
+  REDIS_URL: z.string().optional(),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

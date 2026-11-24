@@ -15,9 +15,15 @@ import professionalRoutes from './modules/professionals/professional.routes.js';
 import adminDoctorRoutes from './modules/professionals/admin.routes.js';
 import doctorRoutes from './modules/professionals/doctor.routes.js';
 import { doctorAvailabilityRoutes } from './modules/availability/availability.routes.js';
+import appointmentRoutes from './modules/appointments/appointment.routes.js';
 
 export const createApp = (): Application => {
   const app: Application = express();
+
+  // Production reverse proxy support (Cloudflare, AWS ALB, Nginx, Render)
+  if (config.NODE_ENV === 'production') {
+    app.set('trust proxy', 1);
+  }
 
   // Baseline Security & Middleware
   app.use(requestIdMiddleware);
@@ -34,30 +40,38 @@ export const createApp = (): Application => {
   app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
   // Deep Health Check endpoint (verifies server and database connectivity)
-  app.get('/health', async (_req: Request, res: Response) => {
-    try {
-      // Probe PostgreSQL database connection
-      await prisma.$queryRaw`SELECT 1`;
+ app.get('/health', async (_req: Request, res: Response) => {
+  res.set('Cache-Control', 'no-store');
+  const start = performance.now();
 
-      res.status(200).json({
-        status: 'healthy',
-        database: 'connected',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        service: 'ProRoute API',
-      });
-    } catch (err: unknown) {
-      logger.error({ err }, 'Deep health check failed: database is unreachable');
-      res.status(503).json({
-        status: 'unhealthy',
-        database: 'disconnected',
-        error: 'Database unreachable',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        service: 'ProRoute API',
-      });
-    }
-  });
+  try {
+    await Promise.race([
+      prisma.$queryRaw`SELECT 1`,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('DB health check timeout')), 3000)
+      ),
+    ]);
+
+    res.status(200).json({
+      status: 'healthy',
+      database: 'connected',
+      dbLatencyMs: Math.round(performance.now() - start),
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      service: 'ProRoute API',
+    });
+  } catch (err: unknown) {
+    logger.error({ err }, 'Deep health check failed: database is unreachable');
+    res.status(503).json({
+      status: 'unhealthy',
+      database: 'disconnected',
+      error: 'Database unreachable',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      service: 'ProRoute API',
+    });
+  }
+});
 
   // Apply Global API Rate Limiter to all canonical /api/v1 routes
   app.use('/api/v1', globalApiRateLimiter);
@@ -71,6 +85,7 @@ export const createApp = (): Application => {
     app.use(`${prefix}/admin/doctors`, adminDoctorRoutes);
     app.use(`${prefix}/doctors`, doctorRoutes);
     app.use(`${prefix}/doctor/availability`, doctorAvailabilityRoutes);
+    app.use(`${prefix}/appointments`, appointmentRoutes);
   };
 
   mountRoutes('/api/v1');

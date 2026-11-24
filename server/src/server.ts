@@ -2,10 +2,26 @@ import { app } from './app.js';
 import { config } from './config/index.js';
 import { prisma } from './lib/prisma.js';
 import { logger } from './lib/logger.js';
+import { isRedisConfigured, closeRedisConnections } from './lib/redis.js';
+import { closeAppointmentQueue } from './queues/appointment.queue.js';
+import { closeEmailQueue } from './queues/email.queue.js';
+import {
+  startAppointmentExpirationWorker,
+  stopAppointmentExpirationWorker,
+} from './workers/appointment-expiration.worker.js';
+import { startEmailWorker, stopEmailWorker } from './workers/email.worker.js';
 
 const server = app.listen(config.PORT, () => {
   logger.info(`🚀 ProRoute API Server running on port ${config.PORT} [${config.NODE_ENV}]`);
 });
+
+if (isRedisConfigured()) {
+  logger.info('Redis detected. Starting BullMQ appointment expiration and email workers...');
+  startAppointmentExpirationWorker();
+  startEmailWorker();
+} else {
+  logger.info('REDIS_URL not configured. Running with in-memory timer fallback and direct email delivery.');
+}
 
 let isShuttingDown = false;
 
@@ -35,7 +51,18 @@ const gracefulShutdown = async (signal: string, exitCode = 0) => {
     });
     logger.info('HTTP server closed. All in-flight requests completed.');
 
-    // 2. Resource Cleanup: Disconnect database pool safely
+    // 2. Stop BullMQ Workers & Queues
+    await stopAppointmentExpirationWorker();
+    await stopEmailWorker();
+    await closeAppointmentQueue();
+    await closeEmailQueue();
+    logger.info('BullMQ workers and queues closed cleanly.');
+
+    // 3. Disconnect Redis client
+    await closeRedisConnections();
+    logger.info('Redis client disconnected.');
+
+    // 4. Resource Cleanup: Disconnect database pool safely
     await prisma.$disconnect();
     logger.info('Database client disconnected cleanly.');
 
@@ -61,4 +88,3 @@ process.on('uncaughtException', (err: Error) => {
   logger.fatal({ err }, 'Uncaught Exception detected in process.');
   gracefulShutdown('uncaughtException', 1);
 });
-

@@ -1,0 +1,82 @@
+{
+  "version": 2,
+  "skills": {
+    "baseline-ui": {
+      "source": "ibelick/ui-skills",
+      "commit": "65cc0edb4f64fe8bfe7e9c59466074de25bece76",
+      "sourceType": "github",
+      "skillPath": "skills/baseline-ui/SKILL.md",
+      "computedHash": "a7336b9eab7479fb012abc59030fcd9736a31fc6c7cffc0dd9f90b36e34861aa"
+    },
+    "code-review-and-quality": {
+      "source": "addyosmani/agent-skills",
+      "commit": "8c99fa36d90068c82d547f7c12a9d67a3e95f4ee",
+      "sourceType": "github",
+      "skillPath": "skills/code-review-and-quality/SKILL.md",
+      "computedHash": "a63e1874fa8f1ee04194868f9b8ba18133aa20464586369f3eedb8df6000a0cc"
+    },
+    "component-canvas": {
+      "source": "ibelick/ui-skills",
+      "commit": "65cc0edb4f64fe8bfe7e9c59466074de25bece76",
+      "sourceType": "github",
+      "skillPath": "skills/component-canvas/SKILL.md",
+      "computedHash": "9421fe57a5026408838ef15c9dd16d73ccd6fdfed90de345faa26d17499f5771"
+    },
+    "create-canvas": {
+      "source": "ibelick/ui-skills",
+      "commit": "65cc0edb4f64fe8bfe7e9c59466074de25bece76",
+      "sourceType": "github",
+      "skillPath": "skills/create-canvas/SKILL.md",
+      "computedHash": "b0d276b1711150ec106060d2f5d88c053246e24057a0d575193079976eb97348"
+    },
+    "create-design-md": {
+      "source": "ibelick/ui-skills",
+      "commit": "65cc0edb4f64fe8bfe7e9c59466074de25bece76",
+      "sourceType": "github",
+      "skillPath": "skills/create-design-md/SKILL.md",
+      "computedHash": "2fd65eb377fb0081ae1eb9217856f1dbe5de0f0b5607c6df8f3349708a664ecb"
+    },
+    "fixing-accessibility": {
+      "source": "ibelick/ui-skills",
+      "commit": "65cc0edb4f64fe8bfe7e9c59466074de25bece76",
+      "sourceType": "github",
+      "skillPath": "skills/fixing-accessibility/SKILL.md",
+      "computedHash": "50fe52aae0661c5aef2d1ed868bbfcda877ce96a6ec16ffa1c8a77dc83ea9695"
+    },
+    "fixing-metadata": {
+      "source": "ibelick/ui-skills",
+      "commit": "65cc0edb4f64fe8bfe7e9c59466074de25bece76",
+      "sourceType": "github",
+      "skillPath": "skills/fixing-metadata/SKILL.md",
+      "computedHash": "b71eee5b670eb1b55ff5f62d65a3e6eed642faf1ade02fb79c2d6c03b36938e2"
+    },
+    "fixing-motion-performance": {
+      "source": "ibelick/ui-skills",
+      "commit": "65cc0edb4f64fe8bfe7e9c59466074de25bece76",
+      "sourceType": "github",
+      "skillPath": "skills/fixing-motion-performance/SKILL.md",
+      "computedHash": "f9d9c68f117fdf33701fc8b103bfefda48903aa68bef70e157ae8f455c954daa"
+    },
+    "impeccable": {
+      "source": "pbakaus/impeccable",
+      "commit": "d41d9860b0094dcb68030657da63461212835aaa",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/impeccable/SKILL.md",
+      "computedHash": "077889e9782761360c17acbc2522af320d0dd0f928b09cd90884fa304f443a34"
+    },
+    "improve-ui": {
+      "source": "ibelick/ui-skills",
+      "commit": "65cc0edb4f64fe8bfe7e9c59466074de25bece76",
+      "sourceType": "github",
+      "skillPath": "skills/improve-ui/SKILL.md",
+      "computedHash": "7f913010ca7e6b5c224d928d4f2500438d7daacebb25f00e2f4df3bed513d51d"
+    },
+    "ui-skills-root": {
+      "source": "ibelick/ui-skills",
+      "commit": "65cc0edb4f64fe8bfe7e9c59466074de25bece76",
+      "sourceType": "github",
+      "skillPath": "skills/ui-skills-root/SKILL.md",
+      "computedHash": "1eb4241459d13315bb10930554de1ad20bf74568bd5d0f10f4cc0edee1b72439"
+    }
+  }
+}
