@@ -1,7 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { UserProfile } from '../../../api/client';
 import { PatientMetricCards } from '../components/PatientMetricCards';
+import { appointmentService } from '../../../services/appointment.service';
+import { getUserTimezone, formatZonedDate, formatZonedRange } from '../../../lib/timezone';
 import {
   Lock,
   Stethoscope,
@@ -9,6 +12,9 @@ import {
   Sparkles,
   Baby,
   AlertOctagon,
+  Calendar,
+  Clock,
+  ChevronRight,
 } from 'lucide-react';
 import { Button } from '../../../components/ui';
 
@@ -17,6 +23,18 @@ interface PatientPortalPageProps {
 }
 
 export const PatientPortalPage: React.FC<PatientPortalPageProps> = ({ currentUser }) => {
+  const patientTz = getUserTimezone();
+
+  // Query real patient appointments
+  const { data: upcomingData } = useQuery({
+    queryKey: ['my-appointments', 'upcoming', 1],
+    queryFn: () => appointmentService.getMyAppointments({ scope: 'upcoming', limit: 5 }),
+    enabled: !!currentUser,
+  });
+
+  const scheduledCount = upcomingData?.pagination?.total ?? (upcomingData?.data?.length ?? 0);
+  const nextAppointment = upcomingData?.data?.[0];
+
   return (
     <div className="w-full max-w-7xl mx-auto flex flex-col gap-8">
       {/* Welcome & Security Banner */}
@@ -34,8 +52,13 @@ export const PatientPortalPage: React.FC<PatientPortalPageProps> = ({ currentUse
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-surface-container/85 border border-surface-container-highest px-4 py-2.5 rounded-xl shadow-sm text-xs">
+        <div className="flex items-center gap-3 flex-wrap">
+          <Link to="/portal/profile">
+            <Button variant="secondary" size="sm" className="text-xs font-semibold">
+              Profile &amp; Medical Intake
+            </Button>
+          </Link>
+          <div className="flex items-center gap-2 bg-surface border border-surface-container-highest px-4 py-2.5 rounded-xl shadow-xs text-xs">
             <Lock className="w-4 h-4 text-secondary shrink-0" />
             <span className="text-on-surface">
               Account Status: <span className="text-primary font-bold">Active & Secure</span>
@@ -44,9 +67,52 @@ export const PatientPortalPage: React.FC<PatientPortalPageProps> = ({ currentUse
         </div>
       </section>
 
-      {/* Quick Metric Cards */}
+      {/* Hero Next Upcoming Consultation Banner (If active appointment exists) */}
+      {nextAppointment && (
+        <section className="p-5 sm:p-6 rounded-2xl bg-surface border border-primary/30 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-5 relative overflow-hidden">
+          <div className="flex items-start sm:items-center gap-4 flex-1">
+            <div className="w-13 h-13 rounded-2xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center font-bold text-lg shrink-0">
+              <Calendar className="w-6 h-6 text-primary" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] font-mono uppercase tracking-wider font-bold text-primary">
+                  Next Upcoming Consultation
+                </span>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                  {nextAppointment.status}
+                </span>
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-on-surface">
+                {nextAppointment.professional?.name ? `Dr. ${nextAppointment.professional.name}` : 'Healthcare Specialist'}
+                {nextAppointment.professional?.specialty && (
+                  <span className="text-xs font-normal text-on-surface-variant ml-2">
+                    • {nextAppointment.professional.specialty.name}
+                  </span>
+                )}
+              </h3>
+              <p className="text-xs text-on-surface-variant flex items-center gap-2">
+                <Clock className="w-3.5 h-3.5 text-secondary" />
+                <span>{formatZonedRange(nextAppointment.startTimeUtc, nextAppointment.endTimeUtc, patientTz)}</span>
+                <span className="font-semibold text-on-surface">({formatZonedDate(nextAppointment.startTimeUtc, patientTz)})</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-surface-container-highest/60">
+            <Link to="/portal/appointments">
+              <Button size="sm" className="font-semibold text-xs gap-1.5 shadow-sm">
+                <span>View Full Queue</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Button>
+            </Link>
+          </div>
+        </section>
+      )}
+
+      {/* Quick Metric Cards with live data */}
       <PatientMetricCards
-        scheduledConsultsCount={0}
+        scheduledConsultsCount={scheduledCount}
         activeRegimensCount={0}
         medicalRecordsCount={0}
       />

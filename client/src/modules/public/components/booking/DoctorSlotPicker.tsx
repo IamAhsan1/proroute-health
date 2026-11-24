@@ -54,11 +54,12 @@ export const DoctorSlotPicker: React.FC<DoctorSlotPickerProps> = ({
   const [selectedDate, setSelectedDate] = useState<string>(startDateStr);
   const [selectedSlot, setSelectedSlot] = useState<SlotDto | null>(null);
 
-  // Fetch slots from API
+  // Fetch slots from API with 10s background polling for live hold releases & double-booking prevention
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['doctor-slots', doctorId, startDateStr, endDateStr],
     queryFn: () => availabilityService.getDoctorSlots(doctorId, startDateStr, endDateStr),
-    staleTime: 60000,
+    staleTime: 8000,
+    refetchInterval: 10000, // Background poll every 10s so held & released slots stay updated live
   });
 
   const parsedError = useMemo(() => (isError ? extractApiError(error) : null), [isError, error]);
