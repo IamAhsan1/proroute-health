@@ -46,6 +46,12 @@ describe('IDOR/BOLA Protection — /api/v1/users/me', () => {
       userId: userA.id,
       name: 'User A Name',
       phone: '111-222-3333',
+      dateOfBirth: null,
+      gender: null,
+      bloodGroup: null,
+      allergies: null,
+      emergencyContactName: null,
+      emergencyContactPhone: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     },
@@ -73,6 +79,12 @@ describe('IDOR/BOLA Protection — /api/v1/users/me', () => {
       userId: userB.id,
       name: 'User B Private Medical Data',
       phone: '999-888-7777',
+      dateOfBirth: null,
+      gender: null,
+      bloodGroup: null,
+      allergies: null,
+      emergencyContactName: null,
+      emergencyContactPhone: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     },
@@ -137,5 +149,49 @@ describe('IDOR/BOLA Protection — /api/v1/users/me', () => {
 
     // Because private resources ONLY exist under /me, direct ID targeting is completely unrouted
     expect(res.status).toBe(404);
+  });
+
+  it('should update patient healthcare intake fields via PATCH /api/v1/users/me', async () => {
+    const tokenA = JwtService.generateTokens(userA).accessToken;
+
+    const updatedUserA: UserWithProfile = {
+      ...mockUserAProfile,
+      patient: {
+        ...mockUserAProfile.patient!,
+        name: 'Ayesha Ali',
+        phone: '+92-300-1234567',
+        dateOfBirth: new Date('1995-04-12T00:00:00.000Z'),
+        gender: 'FEMALE',
+        bloodGroup: 'O+',
+        allergies: 'Penicillin',
+        emergencyContactName: 'Sara Ali',
+        emergencyContactPhone: '+92-300-7654321',
+      },
+    };
+
+    vi.spyOn(userRepository, 'updateProfile').mockResolvedValue(updatedUserA);
+
+    const res = await request(app)
+      .patch('/api/v1/users/me')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({
+        name: 'Ayesha Ali',
+        phone: '+92-300-1234567',
+        dateOfBirth: '1995-04-12',
+        gender: 'FEMALE',
+        bloodGroup: 'O+',
+        allergies: 'Penicillin',
+        emergencyContactName: 'Sara Ali',
+        emergencyContactPhone: '+92-300-7654321',
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.patient.dateOfBirth).toBe('1995-04-12');
+    expect(res.body.data.patient.gender).toBe('FEMALE');
+    expect(res.body.data.patient.bloodGroup).toBe('O+');
+    expect(res.body.data.patient.allergies).toBe('Penicillin');
+    expect(res.body.data.patient.emergencyContactName).toBe('Sara Ali');
+    expect(res.body.data.patient.emergencyContactPhone).toBe('+92-300-7654321');
   });
 });

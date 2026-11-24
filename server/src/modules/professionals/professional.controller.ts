@@ -9,22 +9,64 @@ import {
 import { updateProfessionalProfileSchema } from './professional.types.js';
 import { availabilityRepository } from '../availability/availability.repository.js';
 import { expandDoctorSlots } from '../availability/slot-expansion.service.js';
+import { appointmentRepository } from '../appointments/appointment.repository.js';
 import { NotFoundError } from '../../utils/apiErrors.js';
 import { VerificationStatus } from '@prisma/client';
 
-const doctorSlotsQuerySchema = z.object({
-  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid startDate format').optional(),
-  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid endDate format').optional(),
-});
+const doctorSlotsQuerySchema = z
+  .object({
+    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid startDate format').optional(),
+    endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid endDate format').optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.startDate && data.endDate) {
+        return data.startDate <= data.endDate;
+      }
+      return true;
+    },
+    {
+      message: 'startDate must be before or equal to endDate',
+      path: ['startDate'],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.startDate && data.endDate) {
+        const start = new Date(data.startDate).getTime();
+        const end = new Date(data.endDate).getTime();
+        const diffDays = (end - start) / (1000 * 60 * 60 * 24);
+        return diffDays <= 60;
+      }
+      return true;
+    },
+    {
+      message: 'Query window cannot exceed 60 days',
+      path: ['endDate'],
+    }
+  );
 
-const doctorSearchQuerySchema = z.object({
-  specialty: z.string().optional(),
-  search: z.string().optional(),
-  minFee: z.coerce.number().min(0).optional(),
-  maxFee: z.coerce.number().min(0).optional(),
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(50).default(20),
-});
+const doctorSearchQuerySchema = z
+  .object({
+    specialty: z.string().optional(),
+    search: z.string().optional(),
+    minFee: z.coerce.number().min(0).finite().optional(),
+    maxFee: z.coerce.number().min(0).finite().optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(50).default(20),
+  })
+  .refine(
+    (data) => {
+      if (data.minFee !== undefined && data.maxFee !== undefined) {
+        return data.minFee <= data.maxFee;
+      }
+      return true;
+    },
+    {
+      message: 'minFee cannot be greater than maxFee',
+      path: ['minFee'],
+    }
+  );
 
 const adminPendingQuerySchema = z.object({
   page: z.coerce.number().int().min(1, 'Page must be at least 1').default(1),
@@ -142,21 +184,36 @@ export class ProfessionalController {
     const startDateStr = query.startDate || todayStr;
     const endDateStr = query.endDate || fourteenDaysLater;
 
-    const [rules, overrides] = await Promise.all([
+    const rangeStart = new Date(startDateStr + 'T00:00:00.000Z');
+    const rangeEnd = new Date(endDateStr + 'T23:59:59.999Z');
+    // Pad +/- 24h to cover any doctor timezone offset relative to UTC
+    const appointmentQueryStart = new Date(rangeStart.getTime() - 24 * 60 * 60 * 1000);
+    const appointmentQueryEnd = new Date(rangeEnd.getTime() + 24 * 60 * 60 * 1000);
+
+    const [rules, overrides, activeAppointments] = await Promise.all([
       availabilityRepository.getAvailabilities(doctor.id),
-      availabilityRepository.getOverrides(
+      availabilityRepository.getOverrides(doctor.id, rangeStart, rangeEnd),
+      appointmentRepository.findActiveAppointmentsForDoctor(
         doctor.id,
-        new Date(startDateStr + 'T00:00:00.000Z'),
-        new Date(endDateStr + 'T23:59:59.999Z')
+        appointmentQueryStart,
+        appointmentQueryEnd
       ),
     ]);
 
-    const slots = expandDoctorSlots({
+    const expandedSlots = expandDoctorSlots({
       timezone: doctor.timezone || 'Asia/Karachi',
       rules,
       overrides,
       startDateStr,
       endDateStr,
+    });
+
+    const slots = expandedSlots.filter((slot) => {
+      const slotStart = new Date(slot.startUtc).getTime();
+      const slotEnd = new Date(slot.endUtc).getTime();
+      return !activeAppointments.some(
+        (apt) => apt.startTimeUtc.getTime() < slotEnd && apt.endTimeUtc.getTime() > slotStart
+      );
     });
 
     res.status(200).json({

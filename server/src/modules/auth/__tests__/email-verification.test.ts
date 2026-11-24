@@ -35,6 +35,12 @@ describe('Email Verification Endpoints', () => {
       userId: 'user-uuid-1',
       name: 'John Doe',
       phone: null,
+      dateOfBirth: null,
+      gender: null,
+      bloodGroup: null,
+      allergies: null,
+      emergencyContactName: null,
+      emergencyContactPhone: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     },
@@ -96,6 +102,26 @@ describe('Email Verification Endpoints', () => {
       const res = await request(app)
         .post('/api/v1/auth/verify-email')
         .send({ token: rawToken });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(verifySpy).toHaveBeenCalledWith(expectedTokenHash);
+    });
+
+    it('should sanitize and trim tokens with leading or trailing whitespace before hashing', async () => {
+      const rawToken = 'test-token-with-whitespace';
+      const expectedTokenHash = crypto
+        .createHash('sha256')
+        .update(rawToken)
+        .digest('hex');
+
+      const verifySpy = vi
+        .spyOn(authRepository, 'verifyUserEmail')
+        .mockResolvedValue({ ...mockUser, isEmailVerified: true });
+
+      const res = await request(app)
+        .post('/api/v1/auth/verify-email')
+        .send({ token: `   ${rawToken}   \n` });
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);

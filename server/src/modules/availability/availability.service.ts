@@ -139,6 +139,10 @@ export class AvailabilityService {
       }
     }
 
+    if (startDate && endDate && startDate > endDate) {
+      throw new BadRequestError('startDate cannot be after endDate');
+    }
+
     const overrides = await this.repo.getOverrides(prof.id, startDate, endDate);
 
     return overrides.map((o) => ({

@@ -115,7 +115,7 @@ describe('SlotExpansionService', () => {
       expect(slots[0].period).toBe('afternoon');
     });
 
-    it('should filter out slots that occur within 2 hours of current time', () => {
+    it('should filter out slots that occur within the notice window of current time (default 15m or custom 2h)', () => {
       // Set current time to 2026-11-02 at 08:00 UTC (13:00 PKT)
       const currentSimulatedTime = new Date('2026-11-02T08:00:00.000Z');
 
@@ -136,13 +136,28 @@ describe('SlotExpansionService', () => {
         overrides: [],
         startDateStr: '2026-11-02',
         endDateStr: '2026-11-02',
-        currentTime: currentSimulatedTime, // 08:00 UTC, +2h notice = 10:00 UTC
+        currentTime: currentSimulatedTime,
       });
 
-      // All slots between 13:00 and 17:00 are > 10:00 UTC, so all 8 slots are present
+      // All slots between 13:00 and 17:00 are > 08:15 UTC, so all 8 slots are present
       expect(slots).toHaveLength(8);
 
-      // Now set currentSimulatedTime to 12:30 UTC -> min notice is 14:30 UTC
+      // Now set currentSimulatedTime to 12:50 UTC with default 15m notice -> min notice is 13:05 UTC
+      const defaultNoticeTime = new Date('2026-11-02T12:50:00.000Z');
+      const defaultNoticeSlots = expandDoctorSlots({
+        timezone: 'UTC',
+        rules: afternoonRules,
+        overrides: [],
+        startDateStr: '2026-11-02',
+        endDateStr: '2026-11-02',
+        currentTime: defaultNoticeTime,
+      });
+
+      // Slot at 13:00 should be dropped (< 13:05 UTC); slots from 13:30 onwards remain
+      expect(defaultNoticeSlots.every((s) => s.localStartTime >= '13:30')).toBe(true);
+      expect(defaultNoticeSlots.length).toBe(7);
+
+      // Custom 2-hour notice (120m) with currentSimulatedTime at 12:30 UTC -> min notice is 14:30 UTC
       const lateTime = new Date('2026-11-02T12:30:00.000Z');
       const lateSlots = expandDoctorSlots({
         timezone: 'UTC',
@@ -151,6 +166,7 @@ describe('SlotExpansionService', () => {
         startDateStr: '2026-11-02',
         endDateStr: '2026-11-02',
         currentTime: lateTime,
+        minNoticeMinutes: 120,
       });
 
       // Slots before 14:30 (13:00, 13:30, 14:00) should be dropped

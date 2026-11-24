@@ -55,6 +55,7 @@ export class AuthRepository {
         await tx.professional.create({
           data: {
             userId: user.id,
+            name: data.name,
             profession: 'DOCTOR',
             bio: data.bio || null,
           },
@@ -312,6 +313,7 @@ export class AuthRepository {
         await tx.professional.create({
           data: {
             userId: user.id,
+            name: data.name,
             profession: 'DOCTOR',
           },
         });

@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AvailabilityService } from '../availability.service.js';
 import { AvailabilityRepository } from '../availability.repository.js';
-import { NotFoundError } from '../../../utils/apiErrors.js';
+import { NotFoundError, BadRequestError } from '../../../utils/apiErrors.js';
+import { SetWeeklyScheduleSchema, CreateOverrideSchema } from '../availability.types.js';
 import { Professional, VerificationStatus } from '@prisma/client';
 
 describe('AvailabilityService', () => {
@@ -11,6 +12,7 @@ describe('AvailabilityService', () => {
   const mockDoctor: Professional = {
     id: 'prof-doc-123',
     userId: 'user-doc-123',
+    name: 'Dr. Availability Test',
     profession: 'DOCTOR',
     specialtyId: 'spec-1',
     verificationStatus: VerificationStatus.APPROVED,
@@ -192,6 +194,72 @@ describe('AvailabilityService', () => {
       mockRepo.deleteOverride.mockResolvedValue(null);
 
       await expect(service.deleteDoctorOverride(mockDoctor.userId, 'nonexistent')).rejects.toThrow(NotFoundError);
+    });
+
+    it('should throw BadRequestError when getDoctorOverrides receives startDate after endDate', async () => {
+      mockRepo.findProfessionalByUserId.mockResolvedValue(mockDoctor);
+
+      await expect(
+        service.getDoctorOverrides(mockDoctor.userId, '2026-12-10', '2026-12-01')
+      ).rejects.toThrow(BadRequestError);
+    });
+
+    it('should reject SetWeeklyScheduleSchema when timezone is not a valid IANA timezone', () => {
+      const invalidSchedule = {
+        timezone: 'Mars/Olympus',
+        days: Array.from({ length: 7 }, (_, i) => ({
+          dayOfWeek: i,
+          isActive: false,
+          windows: [],
+          slotDuration: 30,
+          bufferTime: 5,
+        })),
+      };
+
+      const result = SetWeeklyScheduleSchema.safeParse(invalidSchedule);
+      expect(result.success).toBe(false);
+      expect(result.error?.format().timezone?._errors).toContain('Invalid IANA timezone string');
+    });
+
+    it('should reject SetWeeklyScheduleSchema when duplicate days of week are supplied', () => {
+      const duplicateDaysSchedule = {
+        timezone: 'Asia/Karachi',
+        days: Array.from({ length: 7 }, () => ({
+          dayOfWeek: 1, // All Monday
+          isActive: false,
+          windows: [],
+          slotDuration: 30,
+          bufferTime: 5,
+        })),
+      };
+
+      const result = SetWeeklyScheduleSchema.safeParse(duplicateDaysSchedule);
+      expect(result.success).toBe(false);
+      expect(result.error?.issues.some((i) => i.message.includes('Weekly schedule must contain exactly one entry'))).toBe(true);
+    });
+
+    it('should reject CreateOverrideSchema when date is in the past', () => {
+      const pastOverride = {
+        date: '2020-01-01',
+        isBlocked: true,
+      };
+
+      const result = CreateOverrideSchema.safeParse(pastOverride);
+      expect(result.success).toBe(false);
+      expect(result.error?.issues.some((i) => i.message.includes('past dates'))).toBe(true);
+    });
+
+    it('should reject CreateOverrideSchema when unblocked custom hours window is less than 15 minutes', () => {
+      const shortWindowOverride = {
+        date: '2026-12-25',
+        isBlocked: false,
+        customStartTime: '09:00',
+        customEndTime: '09:10', // 10 minutes < 15 minutes
+      };
+
+      const result = CreateOverrideSchema.safeParse(shortWindowOverride);
+      expect(result.success).toBe(false);
+      expect(result.error?.issues.some((i) => i.message.includes('at least 15 minutes'))).toBe(true);
     });
   });
 });

@@ -21,6 +21,8 @@ import {
 } from './auth.schema.js';
 import { AuthTokens, UserResponseDto } from './auth.types.js';
 import { emailService, EmailService } from '../../services/email.service.js';
+import { enqueueEmailJob } from '../../queues/email.queue.js';
+import { setUserRevokedBefore } from '../../lib/redis.js';
 import { OAuth2Client } from 'google-auth-library';
 import { config } from '../../config/index.js';
 
@@ -63,13 +65,12 @@ export class AuthService {
       verificationExpires,
     });
 
-    // Non-blocking dispatch: sends activation email in background
-    // TODO(Phase-04, Plan 04-03): Migrate to BullMQ emailQueue for persistent retries, backoff, and outbound rate limiting.
-    void this.email
-      .sendVerificationEmail(createdUser.email, rawVerificationToken)
-      .catch((err: unknown) => {
-        console.error('Failed to dispatch verification email:', err);
-      });
+    // Non-blocking persistent email dispatch
+    void enqueueEmailJob({
+      type: 'verification',
+      to: createdUser.email,
+      rawToken: rawVerificationToken,
+    });
 
     const tokens = JwtService.generateTokens({
       id: createdUser.id,
@@ -97,6 +98,11 @@ export class AuthService {
   public async login(input: LoginInput): Promise<{ user: UserResponseDto; tokens: AuthTokens }> {
     const user = await this.repo.findUserByEmail(input.email);
     if (!user) {
+      // User enumeration & timing defense: simulate constant-time Argon2 verification
+      await Argon2Service.verifyPassword(
+        '$argon2id$v=19$m=65536,t=3,p=1$c29tZXNhbHQ$RdescudvJCsgqlfrePlflGRTGFd2ungzsJuQUvWBFiV1AEBgOyHHHG73NNdubg',
+        input.password
+      ).catch(() => false);
       throw new UnauthorizedError('Invalid email or password');
     }
 
@@ -114,13 +120,20 @@ export class AuthService {
       );
     }
 
+    // If lock period has expired, reset the failedLoginAttempts counter for a fresh cycle
+    let currentFailedAttempts = user.failedLoginAttempts;
+    if (user.lockUntil && user.lockUntil <= new Date()) {
+      currentFailedAttempts = 0;
+      await this.repo.resetFailedLoginAttempts(user.id);
+    }
+
     if (!user.passwordHash) {
       throw new UnauthorizedError('This account was registered with Google. Please sign in with Google.');
     }
 
     const isValid = await Argon2Service.verifyPassword(user.passwordHash, input.password);
     if (!isValid) {
-      const nextAttempts = user.failedLoginAttempts + 1;
+      const nextAttempts = currentFailedAttempts + 1;
       let lockUntil: Date | undefined;
       if (nextAttempts >= 5) {
         lockUntil = new Date(Date.now() + 15 * 60 * 1000); // 15-minute lockout
@@ -245,13 +258,12 @@ export class AuthService {
 
     await this.repo.setPasswordResetToken(user.id, tokenHash, expiresAt);
 
-    // Non-blocking asynchronous dispatch: prevents SMTP latency from leaking existence via timing
-    // TODO(Phase-04, Plan 04-03): Migrate to BullMQ emailQueue for persistent retries and backoff.
-    void this.email
-      .sendPasswordResetEmail(user.email, rawToken)
-      .catch((err: unknown) => {
-        console.error('Failed to dispatch password reset email:', err);
-      });
+    // Non-blocking persistent email dispatch
+    void enqueueEmailJob({
+      type: 'password-reset',
+      to: user.email,
+      rawToken,
+    });
   }
 
   public async resetPassword(input: ResetPasswordInput): Promise<void> {
@@ -261,13 +273,13 @@ export class AuthService {
     // Atomic transaction: validates unexpired token, consumes it via conditional update,
     // updates password, and revokes all active sessions in a single interactive transaction
     const user = await this.repo.resetPasswordAndRevokeSessions(tokenHash, newPasswordHash);
+    await setUserRevokedBefore(user.id, Math.floor(Date.now() / 1000), 15 * 60);
 
     // Send security alert email (outside transaction)
-    void this.email
-      .sendPasswordChangedAlert(user.email)
-      .catch((err: unknown) => {
-        console.error('Failed to dispatch password changed alert email:', err);
-      });
+    void enqueueEmailJob({
+      type: 'security-alert',
+      to: user.email,
+    });
   }
 
   public async verifyEmail(input: VerifyEmailInput): Promise<void> {
@@ -290,12 +302,12 @@ export class AuthService {
 
     await this.repo.setEmailVerificationToken(user.id, tokenHash, expiresAt);
 
-    // Non-blocking dispatch
-    void this.email
-      .sendVerificationEmail(user.email, rawToken)
-      .catch((err: unknown) => {
-        console.error('Failed to dispatch verification email:', err);
-      });
+    // Non-blocking persistent email dispatch
+    void enqueueEmailJob({
+      type: 'verification',
+      to: user.email,
+      rawToken,
+    });
   }
 
   public async changePassword(
@@ -321,14 +333,18 @@ export class AuthService {
 
     const newPasswordHash = await Argon2Service.hashPassword(input.newPassword);
     await this.repo.updatePasswordAndRevokeSessions(user.id, newPasswordHash);
-    // TODO(Phase-04, Plan 04-03): Set Redis `user:revoked_before:${user.id} = Date.now()` to instantly collapse the 15m access token window to 0.0s.
+    await setUserRevokedBefore(user.id, Math.floor(Date.now() / 1000), 15 * 60);
 
     // Non-blocking security alert email
-    void this.email
-      .sendPasswordChangedAlert(user.email)
-      .catch((err: unknown) => {
-        console.error('Failed to dispatch password changed alert email:', err);
-      });
+    void enqueueEmailJob({
+      type: 'security-alert',
+      to: user.email,
+    });
+  }
+
+  public async logoutAllDevices(userId: string): Promise<void> {
+    await this.repo.revokeAllUserRefreshTokens(userId);
+    await setUserRevokedBefore(userId, Math.floor(Date.now() / 1000), 15 * 60);
   }
 
   public formatUserResponse(user: UserWithProfile): UserResponseDto {
@@ -338,17 +354,27 @@ export class AuthService {
       role: user.role,
       status: user.status,
       isEmailVerified: user.isEmailVerified,
+      hasPassword: Boolean(user.passwordHash),
       createdAt: user.createdAt,
       patient: user.patient
         ? {
             id: user.patient.id,
             name: user.patient.name,
             phone: user.patient.phone,
+            dateOfBirth: user.patient.dateOfBirth
+              ? user.patient.dateOfBirth.toISOString().slice(0, 10)
+              : null,
+            gender: user.patient.gender ?? null,
+            bloodGroup: user.patient.bloodGroup ?? null,
+            allergies: user.patient.allergies ?? null,
+            emergencyContactName: user.patient.emergencyContactName ?? null,
+            emergencyContactPhone: user.patient.emergencyContactPhone ?? null,
           }
         : null,
       professional: user.professional
         ? {
             id: user.professional.id,
+            name: user.professional.name ?? null,
             profession: user.professional.profession,
             specialtyId: user.professional.specialtyId,
             verificationStatus: user.professional.verificationStatus,

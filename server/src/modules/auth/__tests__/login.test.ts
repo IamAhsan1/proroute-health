@@ -40,6 +40,7 @@ describe('POST /api/auth/login', () => {
       professional: {
         id: 'uuid-prof-1',
         userId: 'uuid-doc-1',
+        name: 'Dr. Login Test',
         profession: 'DOCTOR',
         specialtyId: 'spec-1',
         verificationStatus: 'APPROVED',
@@ -80,6 +81,7 @@ describe('POST /api/auth/login', () => {
     expect(cookies).toBeDefined();
     const cookieHeader = cookies.join(';');
     expect(cookieHeader).toContain('access_token=');
+    expect(cookieHeader).toContain('Path=/');
     expect(cookieHeader).toContain('refresh_token=');
   });
 

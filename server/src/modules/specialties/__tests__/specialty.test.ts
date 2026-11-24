@@ -92,5 +92,16 @@ describe('Specialties API', () => {
       expect(res.body.success).toBe(false);
       expect(res.body.error).toContain("Specialty 'cardiology' not found");
     });
+
+    it('should reject creating specialty if slug collapses to fewer than 2 alphanumeric characters', async () => {
+      const { specialtyService } = await import('../specialty.service.js');
+      vi.spyOn(specialtyRepository, 'findByName').mockResolvedValue(null);
+
+      await expect(
+        specialtyService.createSpecialty({
+          name: '!@#$%^',
+        })
+      ).rejects.toThrow('Specialty slug must contain at least 2 alphanumeric characters');
+    });
   });
 });

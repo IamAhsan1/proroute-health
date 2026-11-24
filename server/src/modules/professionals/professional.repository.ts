@@ -84,6 +84,7 @@ export class ProfessionalRepository {
     return prisma.professional.update({
       where: { userId },
       data: {
+        ...(data.name !== undefined && { name: data.name }),
         ...(data.specialtyId !== undefined && { specialtyId: data.specialtyId }),
         ...(data.bio !== undefined && { bio: data.bio }),
         ...(data.consultationFee !== undefined && { consultationFee: data.consultationFee }),
@@ -215,14 +216,19 @@ export class ProfessionalRepository {
     };
 
     if (params.specialtySlug) {
+      const normalizedSpecialty = params.specialtySlug.trim();
       where.specialty = {
-        slug: params.specialtySlug,
+        OR: [
+          { slug: { equals: normalizedSpecialty, mode: 'insensitive' } },
+          { id: normalizedSpecialty },
+        ],
         isActive: true,
       };
     }
 
     if (params.search) {
       where.OR = [
+        { name: { contains: params.search, mode: 'insensitive' } },
         { bio: { contains: params.search, mode: 'insensitive' } },
         { user: { patient: { name: { contains: params.search, mode: 'insensitive' } } } },
       ];

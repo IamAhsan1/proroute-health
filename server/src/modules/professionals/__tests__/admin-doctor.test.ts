@@ -39,6 +39,7 @@ describe('Admin Doctor Verification API (/api/admin/doctors)', () => {
   const mockPendingDoctor: ProfessionalWithDetails = {
     id: 'a0000000-0000-4000-8000-000000000001',
     userId: 'user-doc-pending',
+    name: 'Dr. Pending Review',
     profession: 'DOCTOR',
     specialtyId: 'spec-cardio-1',
     verificationStatus: VerificationStatus.PENDING,

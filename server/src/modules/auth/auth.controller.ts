@@ -18,11 +18,12 @@ import { asyncHandler, ApiResponse, UnauthorizedError } from '../../utils/index.
 const isProd = config.NODE_ENV === 'production';
 
 export const setAuthCookies = (res: Response, tokens: AuthTokens): void => {
-  // Access Token Cookie (15 mins)
+  // Access Token Cookie (15 mins, scoped to root domain path)
   res.cookie('access_token', tokens.accessToken, {
     httpOnly: true,
     secure: isProd,
     sameSite: 'strict',
+    path: '/',
     maxAge: 15 * 60 * 1000, // 15 minutes
   });
 
@@ -109,6 +110,23 @@ export class AuthController {
 
     ApiResponse.success(res, null, 'Logged out successfully');
   });
+
+  public logoutAll = asyncHandler(
+    async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+      if (!req.user) {
+        throw new UnauthorizedError('Authentication required');
+      }
+
+      await this.service.logoutAllDevices(req.user.id);
+      clearAuthCookies(res);
+
+      ApiResponse.success(
+        res,
+        null,
+        'Logged out from all devices successfully'
+      );
+    }
+  );
 
   public forgotPassword = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const validatedInput = forgotPasswordSchema.parse(req.body);

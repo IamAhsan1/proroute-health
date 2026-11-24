@@ -213,6 +213,72 @@ export class EmailService {
       text: 'Security Alert: Your ProRoute password was changed. If you did not make this change, please contact support immediately.',
     });
   }
+
+  public async sendAppointmentConfirmedEmail(
+    to: string,
+    details: { doctorName?: string; patientName?: string; startTimeUtc?: string; endTimeUtc?: string }
+  ): Promise<void> {
+    const subject = 'Appointment Confirmed - ProRoute Health';
+    const dateFormatted = details.startTimeUtc ? new Date(details.startTimeUtc).toUTCString() : 'Scheduled time';
+    const html = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1e293b; background-color: #f8fafc; border-radius: 8px;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <h1 style="color: #0284c7; margin: 0; font-size: 28px; font-weight: 800;">ProRoute Health</h1>
+        </div>
+        <div style="background-color: #ffffff; padding: 32px; border-radius: 8px; border: 1px solid #e2e8f0;">
+          <h2 style="color: #0f172a; margin-top: 0; font-size: 20px;">Your Appointment is Confirmed!</h2>
+          <p style="font-size: 15px; line-height: 1.6; color: #334155;">
+            Your consultation with <strong>${details.doctorName || 'your doctor'}</strong> has been confirmed.
+          </p>
+          <div style="background-color: #f1f5f9; padding: 16px; border-radius: 6px; margin: 20px 0;">
+            <p style="margin: 4px 0; font-size: 14px;"><strong>Date & Time (UTC):</strong> ${dateFormatted}</p>
+          </div>
+          <p style="font-size: 13px; color: #64748b;">
+            Please log into your dashboard at least 5 minutes before your scheduled start time.
+          </p>
+        </div>
+      </div>
+    `;
+
+    await this.sendMail({
+      to,
+      subject,
+      html,
+      text: `Your appointment with ${details.doctorName || 'your doctor'} at ${dateFormatted} is confirmed.`,
+    });
+  }
+
+  public async sendAppointmentCancelledEmail(
+    to: string,
+    details: { doctorName?: string; patientName?: string; startTimeUtc?: string; reason?: string }
+  ): Promise<void> {
+    const subject = 'Appointment Cancelled - ProRoute Health';
+    const dateFormatted = details.startTimeUtc ? new Date(details.startTimeUtc).toUTCString() : 'Scheduled time';
+    const html = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1e293b; background-color: #f8fafc; border-radius: 8px;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <h1 style="color: #0284c7; margin: 0; font-size: 28px; font-weight: 800;">ProRoute Health</h1>
+        </div>
+        <div style="background-color: #ffffff; padding: 32px; border-radius: 8px; border: 1px solid #e2e8f0;">
+          <h2 style="color: #dc2626; margin-top: 0; font-size: 20px;">Appointment Cancelled</h2>
+          <p style="font-size: 15px; line-height: 1.6; color: #334155;">
+            The consultation scheduled for <strong>${dateFormatted}</strong> has been cancelled.
+          </p>
+          ${details.reason ? `<p style="font-size: 14px; color: #64748b;"><strong>Reason:</strong> ${details.reason}</p>` : ''}
+          <p style="font-size: 13px; color: #64748b; margin-top: 20px;">
+            You can visit ProRoute at any time to book another available slot.
+          </p>
+        </div>
+      </div>
+    `;
+
+    await this.sendMail({
+      to,
+      subject,
+      html,
+      text: `Your appointment scheduled for ${dateFormatted} was cancelled. ${details.reason ? `Reason: ${details.reason}` : ''}`,
+    });
+  }
 }
 
 export const emailService = new EmailService();

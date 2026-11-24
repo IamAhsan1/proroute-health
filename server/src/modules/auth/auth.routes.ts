@@ -13,6 +13,7 @@ router.post('/login', authRateLimiter, authController.login);
 router.post('/google', authRateLimiter, authController.googleAuth);
 router.post('/refresh', authController.refresh);
 router.post('/logout', authController.logout);
+router.post('/logout-all', authenticate, authController.logoutAll);
 
 // Password Recovery
 router.post('/forgot-password', authRateLimiter, authController.forgotPassword);

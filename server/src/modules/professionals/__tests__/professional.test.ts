@@ -40,6 +40,7 @@ describe('Professional Profile API (/api/professionals)', () => {
   const mockDoctorProfile: ProfessionalWithDetails = {
     id: 'prof-doc-1',
     userId: 'doc-user-1',
+    name: 'Dr. Sarah Connor',
     profession: 'DOCTOR',
     specialtyId: 'spec-cardio-1',
     verificationStatus: VerificationStatus.PENDING,
@@ -151,6 +152,7 @@ describe('Professional Profile API (/api/professionals)', () => {
       vi.spyOn(professionalRepository, 'findByLicenseNumber').mockResolvedValue({
         id: 'other-prof-id',
         userId: 'other-user-id',
+        name: 'Dr. Other',
         profession: 'DOCTOR',
         specialtyId: null,
         verificationStatus: VerificationStatus.APPROVED,
@@ -193,6 +195,124 @@ describe('Professional Profile API (/api/professionals)', () => {
       expect(res.status).toBe(400);
       expect(res.body.success).toBe(false);
       expect(res.body.error).toContain('Invalid medical specialty selected');
+    });
+
+    it('should NOT reset APPROVED doctor to PENDING when only non-critical fields or unchanged credentialDocumentUrl are sent', async () => {
+      const validSpecialtyId = '11111111-1111-4111-8111-111111111111';
+      const approvedDoctor: ProfessionalWithDetails = {
+        ...mockDoctorProfile,
+        specialtyId: validSpecialtyId,
+        verificationStatus: VerificationStatus.APPROVED,
+      };
+      vi.spyOn(professionalRepository, 'findByUserId').mockResolvedValue(approvedDoctor);
+      vi.spyOn(specialtyRepository, 'findById').mockResolvedValue({
+        id: validSpecialtyId,
+        name: 'Cardiology',
+        slug: 'cardiology',
+        description: null,
+        icon: null,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      const updateSpy = vi
+        .spyOn(professionalRepository, 'updateProfile')
+        .mockResolvedValue({ ...approvedDoctor, bio: 'Updated consultation bio', consultationFee: new Prisma.Decimal(200) });
+
+      const res = await request(app)
+        .patch('/api/v1/professionals/me')
+        .set('Authorization', `Bearer ${verifiedDoctorToken}`)
+        .send({
+          licenseNumber: approvedDoctor.licenseNumber,
+          medicalBoard: approvedDoctor.medicalBoard,
+          specialtyId: approvedDoctor.specialtyId,
+          credentialDocumentUrl: approvedDoctor.credentialDocumentUrl,
+          bio: 'Updated consultation bio',
+          consultationFee: 200,
+        });
+
+      expect(res.status).toBe(200);
+      expect(updateSpy).toHaveBeenCalledWith('doc-user-1', expect.any(Object), false);
+    });
+
+    it('should reset APPROVED doctor to PENDING when credentialDocumentUrl actually changes', async () => {
+      const approvedDoctor: ProfessionalWithDetails = {
+        ...mockDoctorProfile,
+        verificationStatus: VerificationStatus.APPROVED,
+      };
+      vi.spyOn(professionalRepository, 'findByUserId').mockResolvedValue(approvedDoctor);
+      const updateSpy = vi
+        .spyOn(professionalRepository, 'updateProfile')
+        .mockResolvedValue({
+          ...approvedDoctor,
+          verificationStatus: VerificationStatus.PENDING,
+          credentialDocumentUrl: 'https://example.com/docs/new-license.pdf',
+        });
+
+      const res = await request(app)
+        .patch('/api/v1/professionals/me')
+        .set('Authorization', `Bearer ${verifiedDoctorToken}`)
+        .send({
+          credentialDocumentUrl: 'https://example.com/docs/new-license.pdf',
+        });
+
+      expect(res.status).toBe(200);
+      expect(updateSpy).toHaveBeenCalledWith('doc-user-1', expect.any(Object), true);
+    });
+
+    it('should update doctor full name cleanly without resetting APPROVED status', async () => {
+      const approvedDoctor: ProfessionalWithDetails = {
+        ...mockDoctorProfile,
+        verificationStatus: VerificationStatus.APPROVED,
+      };
+      vi.spyOn(professionalRepository, 'findByUserId').mockResolvedValue(approvedDoctor);
+      const updateSpy = vi
+        .spyOn(professionalRepository, 'updateProfile')
+        .mockResolvedValue({
+          ...approvedDoctor,
+          name: 'Dr. Ayesha Khan',
+        });
+
+      const res = await request(app)
+        .patch('/api/v1/professionals/me')
+        .set('Authorization', `Bearer ${verifiedDoctorToken}`)
+        .send({
+          name: 'Dr. Ayesha Khan',
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.name).toBe('Dr. Ayesha Khan');
+      expect(updateSpy).toHaveBeenCalledWith(
+        'doc-user-1',
+        expect.objectContaining({ name: 'Dr. Ayesha Khan' }),
+        false
+      );
+    });
+
+    it('should trim license number and NOT reset APPROVED doctor to PENDING if license number has only whitespace differences', async () => {
+      const approvedDoctor: ProfessionalWithDetails = {
+        ...mockDoctorProfile,
+        verificationStatus: VerificationStatus.APPROVED,
+        licenseNumber: 'MD-12345',
+      };
+      vi.spyOn(professionalRepository, 'findByUserId').mockResolvedValue(approvedDoctor);
+      const updateSpy = vi
+        .spyOn(professionalRepository, 'updateProfile')
+        .mockResolvedValue(approvedDoctor);
+
+      const res = await request(app)
+        .patch('/api/v1/professionals/me')
+        .set('Authorization', `Bearer ${verifiedDoctorToken}`)
+        .send({
+          licenseNumber: '  MD-12345  ',
+        });
+
+      expect(res.status).toBe(200);
+      expect(updateSpy).toHaveBeenCalledWith(
+        'doc-user-1',
+        expect.objectContaining({ licenseNumber: 'MD-12345' }),
+        false
+      );
     });
   });
 });

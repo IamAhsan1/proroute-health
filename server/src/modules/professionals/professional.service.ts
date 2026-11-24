@@ -20,7 +20,8 @@ export class ProfessionalService {
   public formatProfessionalResponse(
     prof: ProfessionalWithDetails
   ): ProfessionalProfileResponseDto {
-    const doctorName = prof.user.patient?.name || 'Dr. Unknown';
+    const emailFallback = prof.user.email ? `Dr. ${prof.user.email.split('@')[0]}` : 'Dr. Practitioner';
+    const doctorName = prof.name || prof.user.patient?.name || emailFallback;
 
     return {
       id: prof.id,
@@ -94,12 +95,18 @@ export class ProfessionalService {
 
     // Determine if we should reset to PENDING:
     // 1. If currently REJECTED, submitting updates resets to PENDING
-    // 2. If currently APPROVED, changing critical medical credentials (license, board, specialty) resets to PENDING
+    // 2. If currently APPROVED, changing critical medical credentials (license, board, specialty, document URL) resets to PENDING
+    const normalizedInputDocUrl =
+      input.credentialDocumentUrl !== undefined
+        ? input.credentialDocumentUrl.trim() || null
+        : undefined;
+    const normalizedCurrentDocUrl = current.credentialDocumentUrl?.trim() || null;
+
     const isChangingCriticalCredentials =
-      (input.licenseNumber && input.licenseNumber !== current.licenseNumber) ||
-      (input.specialtyId && input.specialtyId !== current.specialtyId) ||
-      (input.medicalBoard && input.medicalBoard !== current.medicalBoard) ||
-      input.credentialDocumentUrl !== undefined;
+      (input.licenseNumber !== undefined && input.licenseNumber !== current.licenseNumber) ||
+      (input.specialtyId !== undefined && input.specialtyId !== current.specialtyId) ||
+      (input.medicalBoard !== undefined && input.medicalBoard !== current.medicalBoard) ||
+      (normalizedInputDocUrl !== undefined && normalizedInputDocUrl !== normalizedCurrentDocUrl);
 
     const shouldResetToPending =
       current.verificationStatus === VerificationStatus.REJECTED ||

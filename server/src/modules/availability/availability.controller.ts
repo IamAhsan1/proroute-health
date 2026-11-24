@@ -1,4 +1,5 @@
 import { Response, NextFunction } from 'express';
+import { z } from 'zod';
 import { AuthenticatedRequest } from '../auth/auth.types.js';
 import { availabilityService, AvailabilityService } from './availability.service.js';
 import { CreateOverrideSchema, SetWeeklyScheduleSchema } from './availability.types.js';
@@ -61,7 +62,7 @@ export class AvailabilityController {
   deleteOverride = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const userId = req.user!.id;
-      const { id } = req.params;
+      const { id } = z.object({ id: z.string().uuid('Invalid override ID') }).parse(req.params);
       await this.service.deleteDoctorOverride(userId, id);
       res.status(200).json({
         success: true,

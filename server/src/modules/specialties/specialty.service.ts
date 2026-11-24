@@ -1,4 +1,4 @@
-import { NotFoundError, ConflictError } from '../../utils/apiErrors.js';
+import { NotFoundError, ConflictError, BadRequestError } from '../../utils/apiErrors.js';
 import { SpecialtyRepository, specialtyRepository } from './specialty.repository.js';
 import {
   SpecialtyResponseDto,
@@ -41,6 +41,10 @@ export class SpecialtyService {
       .replace(/[^\w\s-]/g, '')
       .replace(/[\s_-]+/g, '-')
       .replace(/^-+|-+$/g, '');
+
+    if (!slug || slug.length < 2) {
+      throw new BadRequestError('Specialty slug must contain at least 2 alphanumeric characters');
+    }
 
     const existingSlug = await this.repo.findBySlug(slug);
     if (existingSlug) {

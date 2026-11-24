@@ -51,6 +51,7 @@ export const errorHandler = (
       success: false,
       statusCode: err.statusCode,
       error: err.message,
+      ...(err.code && { code: err.code }),
       message: err.message,
       ...(requestId && { requestId }),
     });

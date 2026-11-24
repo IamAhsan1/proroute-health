@@ -14,6 +14,7 @@ describe('Public Doctor Directory API (GET /api/doctors)', () => {
   const mockApprovedDoctor: ProfessionalWithDetails = {
     id: 'prof-approved-1',
     userId: 'user-doc-approved',
+    name: 'Dr. Sarah Smith',
     profession: 'DOCTOR',
     specialtyId: 'spec-cardio-1',
     verificationStatus: VerificationStatus.APPROVED,
@@ -107,6 +108,30 @@ describe('Public Doctor Directory API (GET /api/doctors)', () => {
 
   it('should reject requests with negative consultation fee with 400 Bad Request', async () => {
     const res = await request(app).get('/api/v1/doctors?minFee=-10');
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error).toBe('Validation Error');
+  });
+
+  it('should reject requests where minFee is strictly greater than maxFee with 400 Bad Request', async () => {
+    const res = await request(app).get('/api/v1/doctors?minFee=500&maxFee=100');
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error).toBe('Validation Error');
+  });
+
+  it('should reject doctor slot requests where startDate is after endDate with 400 Bad Request', async () => {
+    const res = await request(app).get('/api/v1/doctors/prof-approved-1/slots?startDate=2026-12-10&endDate=2026-12-01');
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error).toBe('Validation Error');
+  });
+
+  it('should reject doctor slot requests exceeding 60-day query window with 400 Bad Request', async () => {
+    const res = await request(app).get('/api/v1/doctors/prof-approved-1/slots?startDate=2026-01-01&endDate=2026-04-01');
 
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);

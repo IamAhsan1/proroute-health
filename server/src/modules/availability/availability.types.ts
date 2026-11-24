@@ -47,10 +47,33 @@ export const DayScheduleSchema = z
 
 export type DayScheduleDto = z.infer<typeof DayScheduleSchema>;
 
-export const SetWeeklyScheduleSchema = z.object({
-  timezone: z.string().min(2).max(100).default('Asia/Karachi'),
-  days: z.array(DayScheduleSchema).length(7, { message: 'Weekly schedule must contain exactly 7 days (0 to 6)' }),
-});
+export const SetWeeklyScheduleSchema = z
+  .object({
+    timezone: z
+      .string()
+      .min(2)
+      .max(100)
+      .default('Asia/Karachi')
+      .refine(
+        (tz) => {
+          try {
+            Intl.DateTimeFormat(undefined, { timeZone: tz });
+            return true;
+          } catch {
+            return false;
+          }
+        },
+        { message: 'Invalid IANA timezone string' }
+      ),
+    days: z.array(DayScheduleSchema).length(7, { message: 'Weekly schedule must contain exactly 7 days (0 to 6)' }),
+  })
+  .refine(
+    (data) => new Set(data.days.map((d) => d.dayOfWeek)).size === 7,
+    {
+      message: 'Weekly schedule must contain exactly one entry for each day of the week (0 to 6)',
+      path: ['days'],
+    }
+  );
 
 export type SetWeeklyScheduleDto = z.infer<typeof SetWeeklyScheduleSchema>;
 
@@ -64,12 +87,26 @@ export const CreateOverrideSchema = z
   })
   .refine(
     (data) => {
-      if (data.isBlocked) return true;
-      if (!data.customStartTime || !data.customEndTime) return false;
-      return data.customStartTime < data.customEndTime;
+      const todayStr = new Date().toISOString().slice(0, 10);
+      return data.date >= todayStr;
     },
     {
-      message: 'Unblocked overrides require valid customStartTime and customEndTime where start < end',
+      message: 'Schedule overrides cannot be created for past dates',
+      path: ['date'],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.isBlocked) return true;
+      if (!data.customStartTime || !data.customEndTime) return false;
+      const [sh, sm] = data.customStartTime.split(':').map(Number);
+      const [eh, em] = data.customEndTime.split(':').map(Number);
+      const startMin = sh * 60 + sm;
+      const endMin = eh * 60 + em;
+      return endMin - startMin >= 15;
+    },
+    {
+      message: 'Unblocked overrides require a custom hours window of at least 15 minutes where start < end',
       path: ['customEndTime'],
     }
   );

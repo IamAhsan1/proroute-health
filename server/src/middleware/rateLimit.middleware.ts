@@ -83,3 +83,31 @@ export const resendVerificationLimiter = rateLimit({
     });
   },
 });
+
+/**
+ * Appointment booking rate limiter (SEC-02).
+ * In production: Limits IP to 20 booking requests per 15 minutes.
+ * In development / test: Allows generous threshold (500) for automated concurrency and integration tests.
+ */
+export const bookingRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: process.env.NODE_ENV === 'production' ? 20 : 500,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  handler: (req, res) => {
+    const requestId =
+      (req as any).id ||
+      (req.headers['x-request-id'] as string) ||
+      (res.getHeader('x-request-id') as string) ||
+      undefined;
+
+    res.status(429).json({
+      success: false,
+      statusCode: 429,
+      error: 'Too Many Requests',
+      code: 'BOOKING_RATE_LIMIT_EXCEEDED',
+      message: 'Too many booking requests from this IP. Please try again later.',
+      ...(requestId && { requestId }),
+    });
+  },
+});

@@ -152,4 +152,32 @@ describe('Brute-Force & Account Lockout Defenses', () => {
     expect(res.body.success).toBe(true);
     expect(resetSpy).toHaveBeenCalledWith('uuid-lockout-1');
   });
+
+  it('should reset failed login counter and allow a fresh 5-attempt retry cycle when previous lockout has expired', async () => {
+    const passwordHash = await Argon2Service.hashPassword(correctPassword);
+    const expiredLock = new Date(Date.now() - 60 * 1000); // 1 minute in past
+
+    vi.spyOn(authRepository, 'findUserByEmail').mockResolvedValue(
+      createMockUser({
+        passwordHash,
+        failedLoginAttempts: 5,
+        lockUntil: expiredLock,
+      })
+    );
+
+    const resetSpy = vi.spyOn(authRepository, 'resetFailedLoginAttempts').mockResolvedValue({} as any);
+    const incrementSpy = vi.spyOn(authRepository, 'incrementFailedLoginAttempts').mockResolvedValue({} as any);
+
+    // Wrong password after lockout expired
+    const res = await request(app).post('/api/v1/auth/login').send({
+      email: testUserEmail,
+      password: wrongPassword,
+    });
+
+    expect(res.status).toBe(401);
+    // Counter was reset because lockout expired
+    expect(resetSpy).toHaveBeenCalledWith('uuid-lockout-1');
+    // And incremented with lockUntil = undefined (not re-locked on 1st typo!)
+    expect(incrementSpy).toHaveBeenCalledWith('uuid-lockout-1', undefined);
+  });
 });

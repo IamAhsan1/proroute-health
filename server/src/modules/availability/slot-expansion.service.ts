@@ -23,6 +23,7 @@ export interface ExpandDoctorSlotsParams {
   currentTime?: Date;
   defaultSlotDuration?: number;
   defaultBufferTime?: number;
+  minNoticeMinutes?: number;
 }
 
 export function parseTimeToMinutes(timeStr: string): number {
@@ -132,7 +133,8 @@ export function expandDoctorSlots(params: ExpandDoctorSlotsParams): SlotDto[] {
   }
 
   const now = params.currentTime || new Date();
-  const minNoticeTime = new Date(now.getTime() + 2 * 60 * 60 * 1000); // 2 hours minimum notice
+  const minNoticeMinutes = params.minNoticeMinutes ?? 15; // Default 15 minutes advance notice
+  const minNoticeTime = new Date(now.getTime() + minNoticeMinutes * 60 * 1000);
 
   // Map overrides by date string YYYY-MM-DD
   const overridesMap = new Map<string, typeof params.overrides[0]>();

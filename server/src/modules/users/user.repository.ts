@@ -25,14 +25,36 @@ export class UserRepository {
       throw new Error('User not found');
     }
 
-    if (user.patient && (data.name || data.phone !== undefined)) {
+    const hasPatientFields =
+      data.name !== undefined ||
+      data.phone !== undefined ||
+      data.dateOfBirth !== undefined ||
+      data.gender !== undefined ||
+      data.bloodGroup !== undefined ||
+      data.allergies !== undefined ||
+      data.emergencyContactName !== undefined ||
+      data.emergencyContactPhone !== undefined;
+
+    if (user.patient && hasPatientFields) {
       return prisma.user.update({
         where: { id: userId },
         data: {
           patient: {
             update: {
-              ...(data.name && { name: data.name }),
+              ...(data.name !== undefined && { name: data.name }),
               ...(data.phone !== undefined && { phone: data.phone }),
+              ...(data.dateOfBirth !== undefined && {
+                dateOfBirth: data.dateOfBirth ? new Date(`${data.dateOfBirth}T00:00:00.000Z`) : null,
+              }),
+              ...(data.gender !== undefined && { gender: data.gender }),
+              ...(data.bloodGroup !== undefined && { bloodGroup: data.bloodGroup }),
+              ...(data.allergies !== undefined && { allergies: data.allergies }),
+              ...(data.emergencyContactName !== undefined && {
+                emergencyContactName: data.emergencyContactName,
+              }),
+              ...(data.emergencyContactPhone !== undefined && {
+                emergencyContactPhone: data.emergencyContactPhone,
+              }),
             },
           },
         },
@@ -43,12 +65,16 @@ export class UserRepository {
       });
     }
 
-    if (user.professional && (data.bio !== undefined || data.consultationFee !== undefined)) {
+    if (
+      user.professional &&
+      (data.name !== undefined || data.bio !== undefined || data.consultationFee !== undefined)
+    ) {
       return prisma.user.update({
         where: { id: userId },
         data: {
           professional: {
             update: {
+              ...(data.name !== undefined && { name: data.name }),
               ...(data.bio !== undefined && { bio: data.bio }),
               ...(data.consultationFee !== undefined && { consultationFee: data.consultationFee }),
             },

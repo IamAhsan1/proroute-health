@@ -1,12 +1,13 @@
 import { Response, NextFunction } from 'express';
 import { JwtService } from '../modules/auth/jwt.service.js';
 import { AuthenticatedRequest } from '../modules/auth/auth.types.js';
+import { getUserRevokedBefore } from '../lib/redis.js';
 
-export const authenticate = (
+export const authenticate = async (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
-): void => {
+): Promise<void> => {
   const token = req.cookies?.access_token || req.headers.authorization?.replace(/^Bearer\s+/i, '');
 
   if (!token) {
@@ -20,8 +21,17 @@ export const authenticate = (
   try {
     const payload = JwtService.verifyAccessToken(token);
 
-    // TODO(Phase-04, Plan 04-03): Check Redis `user:revoked_before:${payload.id}` against token `iat`
-    // to collapse the 15-minute access token invalidation window to 0.0 seconds upon password change or "logout from all devices".
+    // Redis instant token invalidation check:
+    // If user's sessions were revoked (password changed or logout-all), reject immediately even if 15m JWT has not expired
+    const revokedBefore = await getUserRevokedBefore(payload.id);
+    if (revokedBefore !== null && typeof payload.iat === 'number' && payload.iat <= revokedBefore) {
+      res.status(401).json({
+        success: false,
+        error: 'Session has been revoked. Please log in again.',
+        code: 'TOKEN_REVOKED',
+      });
+      return;
+    }
 
     if (payload.status === 'SUSPENDED') {
       res.status(403).json({
@@ -66,7 +76,8 @@ export const requireVerifiedEmail = (
   if (!req.user.isEmailVerified) {
     res.status(403).json({
       success: false,
-      error: 'Forbidden: Email verification required to access this resource',
+      error: 'Forbidden: Email verification required. Please verify your email address to access this resource.',
+      code: 'EMAIL_NOT_VERIFIED',
     });
     return;
   }

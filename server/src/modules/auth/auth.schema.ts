@@ -35,14 +35,15 @@ export const forgotPasswordSchema = z.object({
 });
 
 export const resetPasswordSchema = z.object({
-  token: z.string().min(1, 'Reset token is required'),
+  token: z.string().min(1, 'Reset token is required').trim(),
   newPassword: passwordSchema,
 });
 
 export const verifyEmailSchema = z.object({
   token: z
     .string({ required_error: 'Verification token is required' })
-    .min(1, 'Verification token cannot be empty'),
+    .min(1, 'Verification token cannot be empty')
+    .trim(),
 });
 
 export const resendVerificationSchema = z.object({
