@@ -66,12 +66,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
                   currentUser.role === 'DOCTOR'
                     ? '/doctor/dashboard'
                     : currentUser.role === 'ADMIN' || currentUser.role === 'SUPER_ADMIN'
-                    ? '/admin/verifications'
+                    ? '/admin/dashboard'
                     : '/doctors'
                 }
                 className="text-xs font-bold text-primary hover:underline"
               >
-                <span>{currentUser.role === 'DOCTOR' ? 'My Doctor Workspace' : currentUser.role === 'ADMIN' ? 'Admin Console' : 'Find Specialists'}</span>
+                <span>
+                  {currentUser.role === 'DOCTOR'
+                    ? 'My Doctor Workspace'
+                    : currentUser.role === 'SUPER_ADMIN'
+                    ? 'Super Admin Console'
+                    : currentUser.role === 'ADMIN'
+                    ? 'Admin Console'
+                    : 'Find Specialists'}
+                </span>
               </Link>
             </div>
           )}
@@ -255,10 +263,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
               </h2>
             </div>
             <Link
-              to="/doctors"
+              to="/specialties"
               className="text-xs font-semibold text-primary hover:underline"
             >
-              <span>View Full Directory</span>
+              <span>View All Specialties</span>
             </Link>
           </div>
 
@@ -268,8 +276,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
               return (
                 <Link
                   key={spec.slug}
-                  to={`/doctors`}
-                  className="p-5 rounded-2xl bg-surface-container/90 hover:bg-surface-container border border-surface-container-highest/80 hover:border-primary/50 shadow-md hover:-translate-y-1 transition-all flex flex-col gap-3 group"
+                  to={`/doctors?specialty=${encodeURIComponent(spec.slug)}`}
+                  className="p-5 rounded-2xl bg-surface hover:bg-surface-container border border-surface-container-highest/80 hover:border-primary/50 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col gap-3 group"
                 >
                   <div className="w-10 h-10 rounded-xl bg-surface-container-highest flex items-center justify-center group-hover:scale-110 transition-transform">
                     <Icon className={`w-5 h-5 ${spec.color}`} />
@@ -289,7 +297,56 @@ export const LandingPage: React.FC<LandingPageProps> = ({ currentUser }) => {
         </div>
       </section>
 
-      {/* 3. PATIENT & DOCTOR ONBOARDING DOCK */}
+      {/* 3. HOW IT WORKS IN 3 STEPS */}
+      <section className="w-full py-16 bg-surface-container-low/40 border-t border-surface-container-highest/60 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto flex flex-col gap-10">
+          <div className="text-center max-w-2xl mx-auto space-y-2">
+            <span className="text-xs uppercase tracking-widest text-primary font-bold">
+              Seamless Healthcare
+            </span>
+            <h2 className="font-headline font-bold text-2xl sm:text-3xl text-on-surface">
+              How ProRoute Works
+            </h2>
+            <p className="text-xs sm:text-sm text-on-surface-variant leading-relaxed">
+              Experience concurrency-safe scheduling with zero double-booking and verified practitioners.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="p-6 rounded-2xl bg-surface border border-surface-container-highest/80 shadow-xs flex flex-col gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
+                01
+              </div>
+              <h3 className="text-base font-bold text-on-surface">Browse &amp; Select Specialist</h3>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                Filter by clinical department, review verified medical credentials, and view real-time 14-day calendar availability.
+              </p>
+            </div>
+
+            <div className="p-6 rounded-2xl bg-surface border border-surface-container-highest/80 shadow-xs flex flex-col gap-3">
+              <div className="w-10 h-10 rounded-xl bg-secondary/10 text-secondary flex items-center justify-center font-bold text-sm">
+                02
+              </div>
+              <h3 className="text-base font-bold text-on-surface">Instant 15-Min Hold Lock</h3>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                Our PostgreSQL concurrency engine locks your selected slot instantly for 15 minutes to guarantee zero race conditions.
+              </p>
+            </div>
+
+            <div className="p-6 rounded-2xl bg-surface border border-surface-container-highest/80 shadow-xs flex flex-col gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
+                03
+              </div>
+              <h3 className="text-base font-bold text-on-surface">Attend Private Consultation</h3>
+              <p className="text-xs text-on-surface-variant leading-relaxed">
+                Connect with your doctor through your authenticated care portal with private records and verified digital consultation history.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. PATIENT & DOCTOR ONBOARDING DOCK */}
       <section className="w-full py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Patient Card */}

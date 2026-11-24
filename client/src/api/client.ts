@@ -42,19 +42,38 @@ export interface ChangePasswordPayload {
   newPassword: string;
 }
 
+export interface UpdatePatientProfilePayload {
+  name?: string;
+  phone?: string | null;
+  dateOfBirth?: string | null;
+  gender?: string | null;
+  bloodGroup?: string | null;
+  allergies?: string | null;
+  emergencyContactName?: string | null;
+  emergencyContactPhone?: string | null;
+}
+
 export interface UserProfile {
   id: string;
   email: string;
   role: 'PATIENT' | 'DOCTOR' | 'ADMIN' | 'SUPER_ADMIN';
   createdAt: string;
   isEmailVerified?: boolean;
+  hasPassword?: boolean;
   patient?: {
     id: string;
     name: string;
     phone: string | null;
+    dateOfBirth?: string | null;
+    gender?: string | null;
+    bloodGroup?: string | null;
+    allergies?: string | null;
+    emergencyContactName?: string | null;
+    emergencyContactPhone?: string | null;
   } | null;
   professional?: {
     id: string;
+    name?: string | null;
     profession: string;
     specialtyId: string | null;
     verificationStatus: string;
@@ -190,9 +209,20 @@ export const api = {
       method: 'POST',
     }),
 
+  logoutAll: () =>
+    request<ApiResponse<{ message: string; revokedAt: string }>>('/api/v1/auth/logout-all', {
+      method: 'POST',
+    }),
+
   getMe: () =>
     request<ApiResponse<UserProfile>>('/api/v1/users/me', {
       method: 'GET',
+    }),
+
+  updateMe: (payload: UpdatePatientProfilePayload) =>
+    request<ApiResponse<UserProfile>>('/api/v1/users/me', {
+      method: 'PATCH',
+      data: payload,
     }),
 
   forgotPassword: (payload: ForgotPasswordPayload) =>

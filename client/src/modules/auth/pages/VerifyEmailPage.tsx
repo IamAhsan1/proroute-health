@@ -120,10 +120,12 @@ export const VerifyEmailPage: React.FC<VerifyEmailPageProps> = ({ currentUser })
                   </Link>
                 ) : (
                   <Link
-                    to="/admin/verifications"
+                    to="/admin/dashboard"
                     className="w-full py-2.5 px-4 rounded-xl bg-primary text-on-primary font-semibold text-xs hover:bg-primary-fixed transition-colors flex items-center justify-center gap-2 shadow-xs"
                   >
-                    <span>Go to Admin Dashboard</span>
+                    <span>
+                      {currentUser.role === 'SUPER_ADMIN' ? 'Go to Super Admin Dashboard' : 'Go to Admin Dashboard'}
+                    </span>
                   </Link>
                 )
               ) : (

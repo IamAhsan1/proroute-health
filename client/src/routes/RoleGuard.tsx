@@ -76,10 +76,10 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({ user, allowedRoles, childr
             )}
             {(user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') && (
               <Link
-                to="/admin/verifications"
+                to="/admin/dashboard"
                 className="flex-1 py-3 px-4 rounded-xl bg-primary text-on-primary text-sm font-semibold hover:bg-primary/90 transition-all text-center"
               >
-                Admin Portal
+                {user.role === 'SUPER_ADMIN' ? 'Super Admin Portal' : 'Admin Portal'}
               </Link>
             )}
           </div>

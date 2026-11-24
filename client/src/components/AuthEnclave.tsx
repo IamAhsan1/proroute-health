@@ -82,7 +82,7 @@ export const AuthEnclave: React.FC<AuthEnclaveProps> = ({
     if (user.role === 'DOCTOR') {
       navigate('/doctor/dashboard', { replace: true });
     } else if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
-      navigate('/admin/verifications', { replace: true });
+      navigate('/admin/dashboard', { replace: true });
     } else {
       navigate('/doctors', { replace: true });
     }
@@ -139,6 +139,7 @@ export const AuthEnclave: React.FC<AuthEnclaveProps> = ({
   const [globalSuccess, setGlobalSuccess] = useState<string | null>(null);
 
   const googleButtonRef = useRef<HTMLDivElement>(null);
+  const [googleIframeRendered, setGoogleIframeRendered] = useState(false);
 
   // Email Verification State (after signup)
   const [signupSent, setSignupSent] = useState(false);
@@ -258,46 +259,61 @@ export const AuthEnclave: React.FC<AuthEnclaveProps> = ({
 
     const initGoogleAuth = () => {
       if (window.google?.accounts?.id && googleButtonRef.current) {
-        window.google.accounts.id.initialize({
-          client_id: clientId,
-          callback: async (response: { credential?: string }) => {
-            if (!response.credential) {
-              setGlobalError('Google authentication did not return an identity token.');
-              return;
-            }
-            setGlobalError(null);
-            try {
-              const res = await api.googleAuth({
-                idToken: response.credential,
-                role: role === 'doctor' ? 'DOCTOR' : 'PATIENT',
-              });
-              if (res.data?.user) {
-                const authedUser = res.data.user;
-                setGlobalSuccess('Google Identity Verified. Establishing session...');
-                setTimeout(() => {
-                  onSuccess(authedUser);
-                  redirectToDashboard(authedUser);
-                }, 500);
+        try {
+          window.google.accounts.id.initialize({
+            client_id: clientId,
+            callback: async (response: { credential?: string }) => {
+              if (!response.credential) {
+                setGlobalError('Google authentication did not return an identity token.');
+                return;
               }
-            } catch (err: unknown) {
-              if (err instanceof Error) {
-                setGlobalError(err.message);
-              } else {
-                setGlobalError('Google Sign-In failed. Please try again.');
+              setGlobalError(null);
+              try {
+                const res = await api.googleAuth({
+                  idToken: response.credential,
+                  role: role === 'doctor' ? 'DOCTOR' : 'PATIENT',
+                });
+                if (res.data?.user) {
+                  const authedUser = res.data.user;
+                  setGlobalSuccess('Google Identity Verified. Establishing session...');
+                  setTimeout(() => {
+                    onSuccess(authedUser);
+                    redirectToDashboard(authedUser);
+                  }, 500);
+                }
+              } catch (err: unknown) {
+                if (err instanceof Error) {
+                  setGlobalError(err.message);
+                } else {
+                  setGlobalError('Google Sign-In failed. Please try again.');
+                }
               }
-            }
-          },
-        });
+            },
+          });
 
-        window.google.accounts.id.renderButton(googleButtonRef.current, {
-          type: 'standard',
-          theme: 'outline',
-          size: 'large',
-          text: 'continue_with',
-          shape: 'rectangular',
-          logo_alignment: 'left',
-          width: '100%',
-        });
+          // Google GSI renderButton expects a numeric width between 200 and 400 pixels
+          const containerWidth = googleButtonRef.current.parentElement?.offsetWidth || 340;
+          const buttonWidth = Math.max(240, Math.min(containerWidth, 380));
+
+          window.google.accounts.id.renderButton(googleButtonRef.current, {
+            type: 'standard',
+            theme: 'outline',
+            size: 'large',
+            text: 'continue_with',
+            shape: 'rectangular',
+            logo_alignment: 'left',
+            width: buttonWidth,
+          });
+
+          // Check if Google iframe was injected into container
+          setTimeout(() => {
+            if (googleButtonRef.current && googleButtonRef.current.childElementCount > 0) {
+              setGoogleIframeRendered(true);
+            }
+          }, 300);
+        } catch (e) {
+          console.warn('Google GSI initialization notice:', e);
+        }
       }
     };
 
@@ -305,12 +321,33 @@ export const AuthEnclave: React.FC<AuthEnclaveProps> = ({
     const interval = setInterval(() => {
       if (window.google?.accounts?.id && googleButtonRef.current) {
         initGoogleAuth();
-        clearInterval(interval);
+        if (googleButtonRef.current.childElementCount > 0) {
+          setGoogleIframeRendered(true);
+          clearInterval(interval);
+        }
       }
     }, 400);
 
     return () => clearInterval(interval);
-  }, [role, onSuccess]);
+  }, [role, mode, onSuccess]);
+
+  const handleManualGoogleClick = () => {
+    if (window.google?.accounts?.id) {
+      window.google.accounts.id.prompt((notification) => {
+        if (notification.isNotDisplayed()) {
+          setGlobalError(
+            'Google Sign-In prompt could not be displayed. Please ensure http://localhost:5173 is added to Authorized JavaScript Origins in your Google Cloud Console.'
+          );
+        } else if (notification.isSkippedMoment()) {
+          setGlobalError('Google Sign-In prompt was dismissed.');
+        }
+      });
+    } else {
+      setGlobalError(
+        'Google Identity Services script is unreachable (e.g. adblocker active or no internet connection). Please use standard email/password authentication.'
+      );
+    }
+  };
 
   // Form Submit Handlers
   const onLogin = async (data: LoginFormData) => {
@@ -925,9 +962,40 @@ export const AuthEnclave: React.FC<AuthEnclaveProps> = ({
                 </span>
               </div>
 
-              {/* Federated Authentication: Official Google Sign-In Button */}
-              <div className="flex flex-col gap-2.5 items-center justify-center min-h-[44px]">
-                <div ref={googleButtonRef} className="w-full flex justify-center" />
+              {/* Federated Authentication: Official Google Sign-In Button with Fallback */}
+              <div className="flex flex-col gap-2.5 items-center justify-center min-h-[44px] w-full">
+                <div
+                  ref={googleButtonRef}
+                  className={`w-full flex justify-center ${!googleIframeRendered ? 'hidden' : ''}`}
+                />
+
+                {!googleIframeRendered && (
+                  <button
+                    type="button"
+                    onClick={handleManualGoogleClick}
+                    className="w-full max-w-[380px] h-11 px-4 rounded-lg border border-outline-variant/40 bg-surface-container-lowest text-on-surface text-sm font-medium hover:bg-surface-container-high transition-colors flex items-center justify-center gap-3 cursor-pointer shadow-2xs"
+                  >
+                    <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
+                      <path
+                        fill="#4285F4"
+                        d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.87c2.26-2.09 3.67-5.17 3.67-9.15z"
+                      />
+                      <path
+                        fill="#34A853"
+                        d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.87-3.05c-1.08.72-2.45 1.16-4.06 1.16-3.13 0-5.78-2.11-6.73-4.96H1.28v3.15C3.26 21.36 7.34 24 12 24z"
+                      />
+                      <path
+                        fill="#FBBC05"
+                        d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.28C.46 8.23 0 10.06 0 12s.46 3.77 1.28 5.39l3.99-3.15z"
+                      />
+                      <path
+                        fill="#EA4335"
+                        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.28 6.61l3.99 3.15c.95-2.85 3.6-4.96 6.73-4.96z"
+                      />
+                    </svg>
+                    <span>Continue with Google</span>
+                  </button>
+                )}
               </div>
             </>
           )}

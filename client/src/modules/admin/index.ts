@@ -1,3 +1,4 @@
+export * from './pages/AdminDashboardPage';
 export * from './pages/AdminVerificationsPage';
 export * from './pages/AdminSpecialtiesPage';
 export * from './components/AuditMetricsCards';

@@ -10,6 +10,7 @@ import {
   CreditCard,
   Search,
   Sparkles,
+  UserRound,
 } from 'lucide-react';
 import { DashboardShell, NavGroup } from '../components/DashboardShell';
 import { DropdownMenuItem } from '../components/ui';
@@ -28,6 +29,7 @@ export const PatientLayout: React.FC<PatientLayoutProps> = ({ currentUser, onLog
     if (location.pathname.includes('/portal/records')) return 'Medical Records & Documents';
     if (location.pathname.includes('/portal/messages')) return 'Doctor Messages';
     if (location.pathname.includes('/portal/billing')) return 'Invoices & Receipts';
+    if (location.pathname.includes('/portal/profile')) return 'Profile & Medical Intake Settings';
     return 'Patient Telehealth Portal';
   };
 
@@ -69,6 +71,11 @@ export const PatientLayout: React.FC<PatientLayoutProps> = ({ currentUser, onLog
           label: 'Billing & Invoices',
           icon: CreditCard,
         },
+        {
+          to: '/portal/profile',
+          label: 'Profile & Settings',
+          icon: UserRound,
+        },
       ],
     },
   ];
@@ -99,6 +106,13 @@ export const PatientLayout: React.FC<PatientLayoutProps> = ({ currentUser, onLog
             <Link to="/portal/dashboard" className="flex items-center gap-2 w-full">
               <LayoutDashboard className="w-3.5 h-3.5 text-primary" />
               Care Dashboard
+            </Link>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem asChild>
+            <Link to="/portal/profile" className="flex items-center gap-2 w-full">
+              <UserRound className="w-3.5 h-3.5 text-secondary" />
+              Profile &amp; Settings
             </Link>
           </DropdownMenuItem>
 

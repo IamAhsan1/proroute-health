@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
 export const doctorCredentialsSchema = z.object({
+  name: z
+    .string()
+    .min(2, 'Full name must be at least 2 characters')
+    .max(100, 'Full name is too long')
+    .trim(),
   licenseNumber: z
     .string()
     .min(3, 'License number must be at least 3 characters')

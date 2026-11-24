@@ -2,6 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { doctorService, DoctorProfile } from '../../../services/doctor.service';
+import { appointmentService, AppointmentDto } from '../../../services/appointment.service';
+import { getUserTimezone, formatZonedDate, formatZonedRange } from '../../../lib/timezone';
 import { UserProfile } from '../../../api/client';
 import {
   BadgeCheck,
@@ -12,6 +14,7 @@ import {
   AlertTriangle,
   Search,
   ShieldCheck,
+  ChevronRight,
 } from 'lucide-react';
 
 interface DoctorDashboardPageProps {
@@ -27,15 +30,28 @@ export const DoctorDashboardPage: React.FC<DoctorDashboardPageProps> = ({ curren
     retry: false,
   });
 
-  const doctorName = currentUser?.email
-    ? `Dr. ${currentUser.email.split('@')[0]}`
-    : 'Dr. Practitioner';
+  const doctorName =
+    profile?.name ||
+    currentUser?.professional?.name ||
+    (currentUser?.email ? `Dr. ${currentUser.email.split('@')[0]}` : 'Dr. Practitioner');
 
   const verificationStatus = profile?.verificationStatus || 'NOT_SUBMITTED';
   const isApproved = verificationStatus === 'APPROVED';
   const isPending = verificationStatus === 'PENDING';
   const isRejected = verificationStatus === 'REJECTED';
   const isNotSubmitted = verificationStatus === 'NOT_SUBMITTED';
+
+  const doctorTz = getUserTimezone();
+
+  // Query upcoming patient appointments for the doctor via canonical /me endpoint
+  const { data: upcomingAppointmentsData } = useQuery({
+    queryKey: ['my-appointments', 'upcoming', 1],
+    queryFn: () => appointmentService.getMyAppointments({ scope: 'upcoming', limit: 5 }),
+    enabled: !!currentUser && currentUser.role === 'DOCTOR' && isApproved,
+  });
+
+  const upcomingCount = upcomingAppointmentsData?.pagination?.total ?? (upcomingAppointmentsData?.data?.length ?? 0);
+  const nextAppointments = upcomingAppointmentsData?.data || [];
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6 pb-12">
@@ -222,17 +238,91 @@ export const DoctorDashboardPage: React.FC<DoctorDashboardPageProps> = ({ curren
         </div>
 
         {/* Metric 4: Patient Consultations */}
-        <div className="p-4 rounded-2xl bg-surface-container border border-surface-container-highest flex flex-col justify-between">
+        <div className="p-4 rounded-2xl bg-surface border border-surface-container-highest flex flex-col justify-between shadow-xs">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-on-surface-variant">Today's Queue</span>
-            <Calendar className="w-4 h-4 text-outline" />
+            <span className="text-xs font-semibold text-on-surface-variant">Active Queue</span>
+            <Calendar className="w-4 h-4 text-primary" />
           </div>
           <div className="mt-1">
-            <span className="text-lg font-bold font-headline text-on-surface">0 Consultations</span>
-            <p className="text-[11px] text-outline mt-0.5">No pending appointments</p>
+            <span className="text-lg font-bold font-headline text-on-surface">
+              {upcomingCount} Consultation{upcomingCount === 1 ? '' : 's'}
+            </span>
+            <p className="text-[11px] text-outline mt-0.5">
+              {upcomingCount > 0 ? 'Upcoming in patient queue' : 'No pending consultations'}
+            </p>
           </div>
         </div>
       </div>
+
+      {/* 4. Live Patient Queue Section (Direct clinical workflow) */}
+      {isApproved && (
+        <div className="bg-surface rounded-2xl border border-surface-container-highest p-5 sm:p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h2 className="text-base font-bold text-on-surface flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-primary" />
+                <span>Upcoming Consultations Queue</span>
+              </h2>
+              <p className="text-xs text-on-surface-variant">Patients scheduled for remote clinical consultation</p>
+            </div>
+            <Link
+              to="/doctor/appointments"
+              className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
+            >
+              <span>Manage Full Queue ({upcomingCount})</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          {nextAppointments.length > 0 ? (
+            <div className="space-y-3">
+              {nextAppointments.slice(0, 3).map((apt: AppointmentDto) => (
+                <div
+                  key={apt.id}
+                  className="p-4 rounded-xl bg-surface-container-low border border-surface-container-highest/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
+                      {apt.patient?.name ? apt.patient.name.charAt(0) : 'P'}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm text-on-surface">
+                          {apt.patient?.name || 'Patient'}
+                        </span>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold">
+                          {apt.status}
+                        </span>
+                      </div>
+                      <p className="text-xs text-on-surface-variant flex items-center gap-2 mt-0.5">
+                        <Clock className="w-3.5 h-3.5 text-secondary" />
+                        <span>{formatZonedRange(apt.startTimeUtc, apt.endTimeUtc, doctorTz)}</span>
+                        <span>({formatZonedDate(apt.startTimeUtc, doctorTz)})</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <Link
+                    to="/doctor/appointments"
+                    className="px-3.5 py-1.5 rounded-xl bg-primary text-on-primary text-xs font-semibold hover:bg-primary/90 transition-all flex items-center gap-1.5 self-end sm:self-auto shrink-0 shadow-xs"
+                  >
+                    <span>Attend Patient</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-6 rounded-xl bg-surface-container-low border border-surface-container-highest/60 text-center flex flex-col items-center justify-center gap-2">
+              <Calendar className="w-8 h-8 text-outline mx-auto" />
+              <p className="text-xs text-on-surface-variant">Your immediate consultation queue is clear.</p>
+              <Link to="/doctor/schedule" className="text-xs font-bold text-primary hover:underline">
+                View &amp; Adjust Available Weekly Shifts →
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 4. Quick Action Hub (Modular Core Features) */}
       <div>

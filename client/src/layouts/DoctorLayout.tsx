@@ -32,9 +32,9 @@ export const DoctorLayout: React.FC<DoctorLayoutProps> = ({ currentUser, onLogou
     return 'Doctor Dashboard';
   };
 
-  const doctorDisplayName = currentUser?.email
-    ? `Dr. ${currentUser.email.split('@')[0]}`
-    : 'Dr. Practitioner';
+  const doctorDisplayName =
+    currentUser?.professional?.name ||
+    (currentUser?.email ? `Dr. ${currentUser.email.split('@')[0]}` : 'Dr. Practitioner');
 
   const navGroups: NavGroup[] = [
     {

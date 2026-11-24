@@ -111,7 +111,7 @@ export const SlotConfigCard: React.FC<SlotConfigCardProps> = ({
         <div className="p-3 rounded-lg bg-surface-container-high/50 border border-surface-container-highest flex items-start gap-2.5">
           <Shield className="w-4 h-4 text-primary shrink-0 mt-0.5" />
           <div className="text-[11px] text-on-surface-variant leading-relaxed">
-            <span className="font-semibold text-on-surface">2-Hour Advance Notice Gate:</span> Patients cannot book slots commencing within 2 hours of current time.
+            <span className="font-semibold text-on-surface">15-Minute Advance Notice:</span> Patients can book open slots up to 15 minutes before start time, maximizing your schedule utilization.
           </div>
         </div>
       </CardContent>

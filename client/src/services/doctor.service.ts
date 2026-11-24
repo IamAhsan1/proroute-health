@@ -29,6 +29,7 @@ export interface PaginatedApiResponse<T> {
 
 export interface DoctorProfile {
   id: string;
+  name?: string | null;
   profession: string;
   specialtyId: string | null;
   specialty: {
@@ -50,6 +51,7 @@ export interface DoctorProfile {
 }
 
 export interface UpdateDoctorProfilePayload {
+  name?: string;
   specialtyId?: string;
   consultationFee?: number;
   bio?: string;
@@ -92,12 +94,23 @@ export const doctorService = {
   // Public directory discovery
   async getPublicDoctors(params?: {
     specialtyId?: string;
+    specialty?: string;
     search?: string;
     maxFee?: number;
     page?: number;
     limit?: number;
   }): Promise<{ doctors: PublicDoctor[]; pagination: PaginationMeta }> {
-    const res = await axiosInstance.get<PaginatedApiResponse<PublicDoctor>>('/api/v1/doctors', { params });
+    const queryParams: Record<string, any> = {};
+    const specialtyVal = params?.specialty || params?.specialtyId;
+    if (specialtyVal) queryParams.specialty = specialtyVal;
+    if (params?.search) queryParams.search = params.search;
+    if (params?.maxFee !== undefined) queryParams.maxFee = params.maxFee;
+    if (params?.page) queryParams.page = params.page;
+    if (params?.limit) queryParams.limit = params.limit;
+
+    const res = await axiosInstance.get<PaginatedApiResponse<PublicDoctor>>('/api/v1/doctors', {
+      params: queryParams,
+    });
     return {
       doctors: res.data.data,
       pagination: res.data.pagination,

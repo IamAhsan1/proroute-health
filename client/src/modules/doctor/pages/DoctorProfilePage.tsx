@@ -6,6 +6,7 @@ import { DoctorCredentialsFormData } from '../../../schemas/doctor.schema';
 import { UserProfile } from '../../../api/client';
 import { VerificationStatusCard } from '../components/VerificationStatusCard';
 import { DoctorCredentialsForm } from '../components/DoctorCredentialsForm';
+import { AccountSecurityCard } from '../../../components/AccountSecurityCard';
 import { Lock, ShieldAlert } from 'lucide-react';
 
 interface DoctorProfilePageProps {
@@ -36,10 +37,15 @@ export const DoctorProfilePage: React.FC<DoctorProfilePageProps> = ({ currentUse
     mutationFn: (payload: DoctorCredentialsFormData) => doctorService.updateMyDoctorProfile(payload),
     onSuccess: (updated) => {
       queryClient.setQueryData(['myDoctorProfile'], updated);
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
       queryClient.invalidateQueries({ queryKey: ['approvedDoctors'] });
+      queryClient.invalidateQueries({ queryKey: ['pendingDoctors'] });
       setFeedbackMessage({
         type: 'success',
-        text: 'Your medical credentials have been updated and submitted for review.',
+        text:
+          updated.verificationStatus === 'APPROVED'
+            ? 'Your doctor profile details have been saved.'
+            : 'Your medical credentials have been updated and submitted for administrative review.',
       });
     },
     onError: (err: any) => {
@@ -99,6 +105,8 @@ export const DoctorProfilePage: React.FC<DoctorProfilePageProps> = ({ currentUse
           isPending={updateMutation.isPending}
           feedbackMessage={feedbackMessage}
         />
+
+        <AccountSecurityCard currentUser={currentUser} />
       </div>
     </div>
   );

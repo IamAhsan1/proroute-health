@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -17,9 +17,22 @@ import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
 import { DoctorSlotPicker } from '../components/booking/DoctorSlotPicker';
 import { availabilityService } from '../../../services/availability.service';
+import { api } from '../../../api/client';
+import {
+  BookingConfirmModal,
+  BookingSlotSummary,
+} from '../components/booking/BookingConfirmModal';
 
 export const DoctorDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const [selectedSlot, setSelectedSlot] = useState<BookingSlotSummary | null>(null);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => api.getMe().catch(() => null),
+    staleTime: 5 * 60 * 1000,
+  });
 
   const { data: doctor, isLoading, isError, refetch } = useQuery({
     queryKey: ['doctor-detail', id],
@@ -153,13 +166,27 @@ export const DoctorDetailPage: React.FC = () => {
             doctorId={doctor.id}
             consultationFee={doctor.consultationFee}
             onBookSlot={(slot) => {
-              alert(
-                `Selected appointment on ${slot.startUtc} (${slot.localStartTime} - ${slot.localEndTime}). Concurrency-safe booking will be completed in Phase 4!`
-              );
+              setSelectedSlot(slot);
+              setIsBookingModalOpen(true);
             }}
           />
         </div>
       </div>
+
+      {/* Concurrency-Safe Booking Confirmation Modal */}
+      <BookingConfirmModal
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+        doctor={{
+          id: doctor.id,
+          name: doctor.name,
+          specialty: doctor.specialty,
+          timezone: doctor.timezone,
+          consultationFee: doctor.consultationFee,
+        }}
+        slot={selectedSlot}
+        isAuthenticated={Boolean(currentUser)}
+      />
     </div>
   );
 };

@@ -10,6 +10,7 @@ import {
   History,
   Lock,
   Search,
+  LayoutDashboard,
 } from 'lucide-react';
 import { DashboardShell, NavGroup } from '../components/DashboardShell';
 import { DropdownMenuItem } from '../components/ui';
@@ -21,19 +22,31 @@ interface AdminLayoutProps {
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ currentUser, onLogout }) => {
   const location = useLocation();
+  const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
 
   const getBreadcrumbTitle = () => {
+    if (location.pathname === '/admin' || location.pathname.includes('/admin/dashboard')) {
+      return isSuperAdmin ? 'Super Admin Governance Overview' : 'Admin Dashboard Overview';
+    }
     if (location.pathname.includes('/admin/verifications')) return 'Doctor Verification Queue';
     if (location.pathname.includes('/admin/specialties')) return 'Medical Specialties Directory';
     if (location.pathname.includes('/admin/bookings')) return 'Appointments & Bookings';
     if (location.pathname.includes('/admin/payments')) return 'Billing & Payouts';
     if (location.pathname.includes('/admin/audit')) return 'Compliance & Activity Logs';
-    return 'Admin Dashboard';
+    return isSuperAdmin ? 'Super Admin Console' : 'Admin Dashboard';
   };
 
-  const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
-
   const navGroups: NavGroup[] = [
+    {
+      heading: 'Overview',
+      items: [
+        {
+          to: '/admin/dashboard',
+          label: 'Dashboard Overview',
+          icon: LayoutDashboard,
+        },
+      ],
+    },
     {
       heading: 'Medical Staff',
       items: [
@@ -57,41 +70,57 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ currentUser, onLogout 
           label: 'Bookings & Appointments',
           icon: Activity,
         },
-        {
-          to: '/admin/payments',
-          label: 'Payment Settlements',
-          icon: CreditCard,
-        },
-        {
-          to: '/admin/audit',
-          label: 'Compliance & Audit Logs',
-          icon: History,
-        },
       ],
     },
+    ...(isSuperAdmin
+      ? [
+          {
+            heading: 'Super Admin Governance',
+            items: [
+              {
+                to: '/admin/payments',
+                label: 'Payment Settlements',
+                icon: CreditCard,
+              },
+              {
+                to: '/admin/audit',
+                label: 'Compliance & Audit Logs',
+                icon: History,
+              },
+            ],
+          },
+        ]
+      : []),
   ];
 
   return (
     <DashboardShell
       brandName="ProRoute"
-      brandTag="ADMIN"
+      brandTag={isSuperAdmin ? 'SUPER ADMIN' : 'ADMIN'}
       brandIcon={ShieldAlert}
       brandColorClass="text-primary"
-      portalName="Admin Console"
+      portalName={isSuperAdmin ? 'Super Admin Console' : 'Admin Console'}
       breadcrumbTitle={getBreadcrumbTitle()}
       storageKey="proroute-admin-sidebar-collapsed"
       currentUser={currentUser}
       userRoleBadge={isSuperAdmin ? 'Super Administrator' : 'Administrator'}
       userRoleBadgeVariant="admin"
-      extraBadgeText="Admin Access"
+      extraBadgeText={isSuperAdmin ? 'Root Governance' : 'Admin Access'}
       extraBadgeIcon={Lock}
-      userSecurityNotice="Verified Administrative Session"
+      userSecurityNotice={isSuperAdmin ? 'Root Governance Session' : 'Verified Administrative Session'}
       navGroups={navGroups}
       showPublicDirectoryLink={true}
       publicDirectoryLabel="Public Directory"
       onLogout={onLogout}
       profileDropdownItems={
         <>
+          <DropdownMenuItem asChild>
+            <Link to="/admin/dashboard" className="flex items-center gap-2 w-full">
+              <LayoutDashboard className="w-3.5 h-3.5 text-primary" />
+              Dashboard Overview
+            </Link>
+          </DropdownMenuItem>
+
           <DropdownMenuItem asChild>
             <Link to="/admin/verifications" className="flex items-center gap-2 w-full">
               <ClipboardCheck className="w-3.5 h-3.5 text-primary" />

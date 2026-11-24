@@ -8,19 +8,20 @@ import { PublicLayout } from './layouts/PublicLayout';
 import { DoctorLayout } from './layouts/DoctorLayout';
 import { AdminLayout } from './layouts/AdminLayout';
 import { PatientLayout } from './layouts/PatientLayout';
-import { DoctorDirectoryPage } from './modules/public';
+import { DoctorDirectoryPage, SpecialtiesPage } from './modules/public';
 import { DoctorDetailPage } from './modules/public/pages/DoctorDetailPage';
 import { LandingPage } from './modules/public/pages/LandingPage';
 import { ThemePreviewPage } from './modules/public/pages/ThemePreviewPage';
 import { DoctorDashboardPage, DoctorProfilePage } from './modules/doctor';
 import { DoctorSchedulePage } from './modules/doctor/pages/DoctorSchedulePage';
-import { AdminVerificationsPage, AdminSpecialtiesPage } from './modules/admin';
-import { PatientPortalPage } from './modules/patient';
+import { AdminDashboardPage, AdminVerificationsPage, AdminSpecialtiesPage } from './modules/admin';
+import { PatientPortalPage, PatientProfilePage } from './modules/patient';
+import { PatientAppointmentsPage } from './modules/patient/pages/PatientAppointmentsPage';
+import { DoctorAppointmentsPage } from './modules/doctor/pages/DoctorAppointmentsPage';
 import { VerifyEmailPage, ResetPasswordPage } from './modules/auth';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { PlannedFeaturePage } from './components/PlannedFeaturePage';
 import {
-  Calendar,
   FileText,
   MessageSquare,
   Activity,
@@ -104,7 +105,7 @@ export const App: React.FC = () => {
               user?.role === 'DOCTOR' ? (
                 <Navigate to="/doctor/dashboard" replace />
               ) : user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN' ? (
-                <Navigate to="/admin/verifications" replace />
+                <Navigate to="/admin/dashboard" replace />
               ) : (
                 <LandingPage currentUser={user} onLogout={handleLogout} />
               )
@@ -136,6 +137,7 @@ export const App: React.FC = () => {
           />
           <Route path="/doctors" element={<DoctorDirectoryPage />} />
           <Route path="/doctors/:id" element={<DoctorDetailPage />} />
+          <Route path="/specialties" element={<SpecialtiesPage />} />
           <Route path="/theme-preview" element={<ThemePreviewPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage currentUser={user} />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -153,26 +155,7 @@ export const App: React.FC = () => {
           <Route path="/doctor/dashboard" element={<DoctorDashboardPage currentUser={user} />} />
           <Route path="/doctor/profile" element={<DoctorProfilePage currentUser={user} />} />
           <Route path="/doctor/schedule" element={<DoctorSchedulePage />} />
-          <Route
-            path="/doctor/appointments"
-            element={
-              <PlannedFeaturePage
-                title="Patient Consultation Queue"
-                category="Clinical Operations"
-                description="Track upcoming appointments, confirm or reschedule requests, and manage patient consultation statuses."
-                plannedFeatures={[
-                  'Live consultation queue with status transitions',
-                  'One-click appointment confirmation & reschedule protocol',
-                  'Patient medical intake summary preview',
-                  'Automated appointment notifications and reminders',
-                ]}
-                backPath="/doctor/dashboard"
-                backLabel="Dashboard"
-                icon={Calendar}
-                badgeVariant="doctor"
-              />
-            }
-          />
+          <Route path="/doctor/appointments" element={<DoctorAppointmentsPage />} />
           <Route
             path="/doctor/documents"
             element={
@@ -226,6 +209,22 @@ export const App: React.FC = () => {
           }
         >
           <Route
+            path="/admin"
+            element={
+              <ErrorBoundary fallbackTitle="Admin Dashboard Error">
+                <AdminDashboardPage currentUser={user} />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ErrorBoundary fallbackTitle="Admin Dashboard Error">
+                <AdminDashboardPage currentUser={user} />
+              </ErrorBoundary>
+            }
+          />
+          <Route
             path="/admin/verifications"
             element={
               <ErrorBoundary fallbackTitle="Verification Queue Error">
@@ -254,8 +253,8 @@ export const App: React.FC = () => {
                   'Cancellation trend analytics and platform load metrics',
                   'Automated refund triggers on disputed cancellations',
                 ]}
-                backPath="/admin/verifications"
-                backLabel="Verifications"
+                backPath="/admin/dashboard"
+                backLabel="Dashboard"
                 icon={Activity}
                 badgeVariant="admin"
               />
@@ -264,41 +263,45 @@ export const App: React.FC = () => {
           <Route
             path="/admin/payments"
             element={
-              <PlannedFeaturePage
-                title="Financials & Payout Ledger"
-                category="Platform Economics"
-                description="Payment processing, commission splitting, doctor escrow payouts, and financial transaction history."
-                plannedFeatures={[
-                  'Escrow settlement and doctor payout disbursements',
-                  'Platform fee deductions and commission reporting',
-                  'Instant refund issuance for cancelled appointments',
-                  'Exportable tax-compliant reconciliation ledger',
-                ]}
-                backPath="/admin/verifications"
-                backLabel="Verifications"
-                icon={CreditCard}
-                badgeVariant="admin"
-              />
+              <RoleGuard user={user} allowedRoles={['SUPER_ADMIN']}>
+                <PlannedFeaturePage
+                  title="Financials & Payout Ledger"
+                  category="Super Admin Governance"
+                  description="Payment processing, commission splitting, doctor escrow payouts, and financial transaction history."
+                  plannedFeatures={[
+                    'Escrow settlement and doctor payout disbursements',
+                    'Platform fee deductions and commission reporting',
+                    'Instant refund issuance for cancelled appointments',
+                    'Exportable tax-compliant reconciliation ledger',
+                  ]}
+                  backPath="/admin/dashboard"
+                  backLabel="Dashboard"
+                  icon={CreditCard}
+                  badgeVariant="admin"
+                />
+              </RoleGuard>
             }
           />
           <Route
             path="/admin/audit"
             element={
-              <PlannedFeaturePage
-                title="Compliance & Activity Audit Logs"
-                category="Regulatory & Clinical Compliance"
-                description="Official logs of doctor verifications, patient record access, and administrative actions for healthcare compliance."
-                plannedFeatures={[
-                  'Protected and permanent audit records',
-                  'Doctor verifications and administrative change logs',
-                  'Secure timestamps and session access history',
-                  'Automated security monitoring and compliance reports',
-                ]}
-                backPath="/admin/verifications"
-                backLabel="Verifications"
-                icon={History}
-                badgeVariant="admin"
-              />
+              <RoleGuard user={user} allowedRoles={['SUPER_ADMIN']}>
+                <PlannedFeaturePage
+                  title="Compliance & Activity Audit Logs"
+                  category="Super Admin Governance"
+                  description="Official logs of doctor verifications, patient record access, and administrative actions for healthcare compliance."
+                  plannedFeatures={[
+                    'Protected and permanent audit records',
+                    'Doctor verifications and administrative change logs',
+                    'Secure timestamps and session access history',
+                    'Automated security monitoring and compliance reports',
+                  ]}
+                  backPath="/admin/dashboard"
+                  backLabel="Dashboard"
+                  icon={History}
+                  badgeVariant="admin"
+                />
+              </RoleGuard>
             }
           />
         </Route>
@@ -312,26 +315,9 @@ export const App: React.FC = () => {
           }
         >
           <Route path="/portal/dashboard" element={<PatientPortalPage currentUser={user} />} />
-          <Route
-            path="/portal/appointments"
-            element={
-              <PlannedFeaturePage
-                title="My Scheduled Consultations"
-                category="Patient Care"
-                description="View your confirmed and upcoming doctor consultations, reschedule slots, or request cancellations."
-                plannedFeatures={[
-                  'Upcoming and past consultation timeline',
-                  'Add to Google / Apple Calendar sync',
-                  'Pre-appointment intake questionnaire review',
-                  'Direct telehealth room launch upon consultation time',
-                ]}
-                backPath="/portal/dashboard"
-                backLabel="Dashboard"
-                icon={Calendar}
-                badgeVariant="patient"
-              />
-            }
-          />
+          <Route path="/portal/profile" element={<PatientProfilePage currentUser={user} />} />
+          <Route path="/portal/appointments" element={<PatientAppointmentsPage />} />
+          <Route path="/patient/appointments" element={<Navigate to="/portal/appointments" replace />} />
           <Route
             path="/portal/records"
             element={

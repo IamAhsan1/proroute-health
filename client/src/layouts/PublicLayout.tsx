@@ -100,8 +100,8 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ currentUser, onLogou
               </Link>
             )}
             {(currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN') && (
-              <Link to="/admin/verifications" className="text-primary font-semibold hover:underline">
-                Administrator Audit Console
+              <Link to="/admin/dashboard" className="text-primary font-semibold hover:underline">
+                {currentUser.role === 'SUPER_ADMIN' ? 'Super Admin Governance Console' : 'Administrator Audit Console'}
               </Link>
             )}
           </div>

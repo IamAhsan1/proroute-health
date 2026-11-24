@@ -19,13 +19,13 @@ export const SpecialtyFilterChips: React.FC<SpecialtyFilterChipsProps> = ({
   return (
     <div className="flex flex-col gap-2">
       <span className="text-xs font-semibold text-on-surface-variant">
-        Filter by Clinical Specialty
+        Medical Specialties
       </span>
       <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
         <button
           type="button"
           onClick={() => onSelectSpecialty('')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-2 cursor-pointer ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-150 flex items-center gap-2 cursor-pointer active:scale-95 motion-reduce:transform-none ${
             selectedSpecialtyId === ''
               ? 'bg-primary text-on-primary shadow-xs'
               : 'bg-surface-container-high/80 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest'
@@ -36,7 +36,7 @@ export const SpecialtyFilterChips: React.FC<SpecialtyFilterChipsProps> = ({
         </button>
 
         {isLoading ? (
-          <div className="flex items-center gap-2 text-xs text-outline">
+          <div className="flex items-center gap-2 text-xs text-outline animate-pulse">
             Loading specialties...
           </div>
         ) : (
@@ -48,7 +48,7 @@ export const SpecialtyFilterChips: React.FC<SpecialtyFilterChipsProps> = ({
                 key={spec.id}
                 type="button"
                 onClick={() => onSelectSpecialty(active ? '' : spec.id)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-colors flex items-center gap-2 cursor-pointer ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all duration-150 flex items-center gap-2 cursor-pointer active:scale-95 motion-reduce:transform-none ${
                   active
                     ? 'bg-primary text-on-primary shadow-xs font-semibold'
                     : 'bg-surface-container-high/80 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest'

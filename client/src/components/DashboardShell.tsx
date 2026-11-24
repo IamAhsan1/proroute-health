@@ -17,7 +17,6 @@ import {
   AvatarFallback,
   Badge,
   Button,
-  Separator,
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
@@ -121,17 +120,17 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
 
   return (
     <div className="w-full h-screen overflow-hidden bg-background text-on-surface flex flex-col md:flex-row selection:bg-primary-container selection:text-on-primary-container">
-      {/* 1. Desktop Fixed Sidebar */}
+      {/* 1. Desktop Fixed Sidebar (Persistent Slate-Navy in both Light and Dark modes) */}
       <aside
-        className={`hidden md:flex h-full bg-surface-container-lowest border-r border-surface-container-highest/60 flex-col justify-between shrink-0 z-20 transition-all duration-300 ease-in-out ${
+        className={`hidden md:flex h-full bg-[#0b1329] border-r border-slate-800/80 flex-col justify-between shrink-0 z-20 transition-all duration-300 ease-in-out text-slate-200 shadow-xl ${
           isCollapsed ? 'w-20' : 'w-72'
         }`}
       >
         <div className="flex-1 min-h-0 flex flex-col no-scrollbar overflow-y-auto">
           {/* Header */}
           <div
-            className={`border-b border-surface-container-highest/50 flex items-center min-h-[64px] transition-all ${
-              isCollapsed ? 'justify-center p-2.5' : 'justify-between p-4'
+            className={`border-b border-slate-800/80 flex items-center min-h-[64px] transition-all ${
+              isCollapsed ? 'justify-center p-2.5' : 'justify-between px-4 py-3'
             }`}
           >
             {isCollapsed ? (
@@ -139,25 +138,27 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
                 variant="ghost"
                 size="icon"
                 onClick={toggleSidebar}
-                className="w-10 h-10 rounded-xl bg-surface-container-high border border-surface-container-highest flex items-center justify-center shadow-sm hover:bg-surface-container-highest hover:scale-105 transition-all group shrink-0"
+                className="w-10 h-10 rounded-xl bg-slate-800/80 border border-slate-700/70 flex items-center justify-center shadow-sm hover:bg-slate-700 hover:scale-105 transition-all group shrink-0"
                 title="Expand Sidebar"
               >
                 <BrandIcon className={`w-5 h-5 ${brandColorClass} group-hover:scale-110 transition-transform`} />
               </Button>
             ) : (
               <>
-                <Link to="/" className="flex items-center gap-2.5 group overflow-hidden">
-                  <div className="w-9 h-9 rounded-xl bg-surface-container-high border border-surface-container-highest flex items-center justify-center shadow-md group-hover:scale-105 transition-transform shrink-0">
+                <Link to="/" className="flex items-center gap-3 group overflow-hidden">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/80 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform shrink-0">
                     <BrandIcon className={`w-5 h-5 ${brandColorClass}`} />
                   </div>
                   <div className="flex flex-col min-w-0 transition-opacity duration-200">
-                    <span className="font-headline font-black text-sm tracking-tight text-on-surface flex items-center gap-1.5 truncate">
-                      {brandName}
-                      <span className={`text-[9px] px-1.5 py-0.2 bg-surface-container-highest ${brandColorClass} font-mono rounded font-bold`}>
+                    <div className="flex items-center gap-2">
+                      <span className="font-headline font-bold text-[15px] tracking-tight text-white truncate">
+                        {brandName}
+                      </span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-primary/20 text-sky-300 border border-primary/30 tracking-wide uppercase">
                         {brandTag}
                       </span>
-                    </span>
-                    <span className={`text-[10px] font-mono ${brandColorClass} font-semibold uppercase tracking-wider truncate`}>
+                    </div>
+                    <span className="text-[11px] text-slate-400 font-medium truncate mt-0.5">
                       {portalName}
                     </span>
                   </div>
@@ -167,7 +168,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
                   variant="ghost"
                   size="icon"
                   onClick={toggleSidebar}
-                  className="h-8 w-8 text-outline hover:text-on-surface shrink-0 hidden md:flex"
+                  className="h-8 w-8 text-slate-400 hover:text-white hover:bg-slate-800/60 shrink-0 hidden md:flex rounded-lg transition-colors"
                   title="Collapse Sidebar"
                 >
                   <PanelLeftClose className="w-4 h-4" />
@@ -177,20 +178,20 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           </div>
 
           {/* User Identity Card */}
-          <div className={`p-3 mx-2 my-2 rounded-2xl bg-surface-container/50 border border-surface-container-highest/50 flex flex-col gap-2 transition-all ${isCollapsed ? 'items-center px-1' : ''}`}>
+          <div className={`p-3 mx-2.5 my-2.5 rounded-2xl bg-slate-900/70 border border-slate-800/80 flex flex-col gap-2 transition-all ${isCollapsed ? 'items-center px-1' : ''}`}>
             <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-2.5'}`}>
-              <Avatar className="h-9 w-9 border-surface-container-highest bg-surface-container-high text-on-surface shrink-0">
-                <AvatarFallback className={`font-headline font-bold text-xs ${brandColorClass}`}>
+              <Avatar className="h-9 w-9 border border-slate-700 bg-slate-800 text-white shrink-0">
+                <AvatarFallback className={`font-headline font-bold text-xs ${brandColorClass} bg-slate-800`}>
                   {initial}
                 </AvatarFallback>
               </Avatar>
 
               {!isCollapsed && (
                 <div className="flex flex-col min-w-0 flex-1">
-                  <span className="text-xs font-bold text-on-surface truncate">
+                  <span className="text-xs font-bold text-white truncate">
                     {displayName}
                   </span>
-                  <span className="text-[10px] font-mono text-outline truncate">
+                  <span className="text-[10px] font-mono text-slate-400 truncate">
                     {currentUser?.email}
                   </span>
                 </div>
@@ -198,7 +199,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
             </div>
 
             {!isCollapsed && (
-              <div className="flex items-center justify-between pt-1">
+              <div className="flex items-center justify-between pt-1 border-t border-slate-800/60">
                 <Badge variant={userRoleBadgeVariant} className="text-[10px]">
                   {userRoleBadge}
                 </Badge>
@@ -217,7 +218,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
             {navGroups.map((group, gIdx) => (
               <React.Fragment key={gIdx}>
                 {group.heading && !isCollapsed && (
-                  <span className="px-3 py-1 text-[11px] font-semibold text-on-surface-variant mt-1">
+                  <span className="px-3 py-1.5 text-[10px] font-semibold text-slate-400/90 uppercase tracking-wider mt-1.5">
                     {group.heading}
                   </span>
                 )}
@@ -229,10 +230,10 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
                       to={item.to}
                       title={item.label}
                       className={({ isActive }) =>
-                        `flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-colors ${
+                        `flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
                           isActive
-                            ? 'bg-surface-container-high text-primary border border-surface-container-highest font-semibold shadow-xs'
-                            : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest/40'
+                            ? 'bg-primary/20 text-white border border-primary/40 font-semibold shadow-xs'
+                            : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
                         } ${isCollapsed ? 'justify-center px-0' : ''}`
                       }
                     >
@@ -241,7 +242,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
                         <>
                           <span className="truncate">{item.label}</span>
                           {item.badge && (
-                            <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded bg-surface-container-highest text-outline">
+                            <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700/60">
                               {item.badge}
                             </span>
                           )}
@@ -251,27 +252,23 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
                   );
                 })}
                 {gIdx < navGroups.length - 1 && (
-                  <div className="my-1.5">
-                    <Separator />
-                  </div>
+                  <div className="my-2 border-t border-slate-800/70" />
                 )}
               </React.Fragment>
             ))}
 
             {showPublicDirectoryLink && (
               <>
-                <div className="my-1.5">
-                  <Separator />
-                </div>
+                <div className="my-2 border-t border-slate-800/70" />
                 {!isCollapsed && (
-                  <span className="px-3 py-1 text-[11px] font-semibold text-on-surface-variant">
+                  <span className="px-3 py-1.5 text-[10px] font-semibold text-slate-400/90 uppercase tracking-wider">
                     Explore Healthcare
                   </span>
                 )}
                 <Link
                   to="/doctors"
                   title={publicDirectoryLabel}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-on-surface-variant hover:text-primary hover:bg-primary/10 transition-colors ${
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-primary/20 transition-all ${
                     isCollapsed ? 'justify-center px-0' : ''
                   }`}
                 >
@@ -284,9 +281,9 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
         </div>
 
         {/* Sidebar Footer */}
-        <div className={`border-t border-surface-container-highest/50 flex flex-col gap-2 shrink-0 ${isCollapsed ? 'p-2.5 items-center' : 'p-3'}`}>
+        <div className={`border-t border-slate-800/80 flex flex-col gap-2 shrink-0 ${isCollapsed ? 'p-2.5 items-center' : 'p-3'}`}>
           {!isCollapsed && (
-            <div className="p-2 rounded-xl bg-surface-container/60 border border-outline-variant/30 text-[10px] text-outline flex items-center gap-2">
+            <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800/60 text-[10px] text-slate-400 flex items-center gap-2">
               <Sparkles className={`w-3.5 h-3.5 ${brandColorClass} shrink-0`} />
               <span className="truncate">{userSecurityNotice}</span>
             </div>
@@ -414,28 +411,30 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
         </main>
       </div>
 
-      {/* 3. Mobile Navigation Drawer Sheet */}
+      {/* 3. Mobile Navigation Drawer Sheet (Matching Persistent Slate-Navy) */}
       <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
-        <SheetContent side="left" className="w-72 p-0 flex flex-col justify-between">
-          <div className="flex flex-col h-full overflow-y-auto">
+        <SheetContent side="left" className="w-72 p-0 flex flex-col justify-between bg-[#0b1329] border-r border-slate-800/80 text-slate-200">
+          <div className="flex flex-col h-full overflow-y-auto no-scrollbar">
             {/* Header */}
-            <div className="p-4 border-b border-surface-container-highest/50 flex items-center justify-between min-h-[64px]">
+            <div className="p-4 border-b border-slate-800/80 flex items-center justify-between min-h-[64px]">
               <Link
                 to="/"
                 onClick={() => setIsMobileOpen(false)}
-                className="flex items-center gap-2.5 group overflow-hidden"
+                className="flex items-center gap-3 group overflow-hidden"
               >
-                <div className="w-9 h-9 rounded-xl bg-surface-container-high border border-surface-container-highest flex items-center justify-center shadow-md">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/80 flex items-center justify-center shadow-md">
                   <BrandIcon className={`w-5 h-5 ${brandColorClass}`} />
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <span className="font-headline font-black text-sm tracking-tight text-on-surface flex items-center gap-1.5 truncate">
-                    {brandName}
-                    <span className={`text-[9px] px-1.5 py-0.2 bg-surface-container-highest ${brandColorClass} font-mono rounded font-bold`}>
+                  <div className="flex items-center gap-2">
+                    <span className="font-headline font-bold text-[15px] tracking-tight text-white truncate">
+                      {brandName}
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-primary/20 text-sky-300 border border-primary/30 tracking-wide uppercase">
                       {brandTag}
                     </span>
-                  </span>
-                  <span className={`text-[10px] font-mono ${brandColorClass} font-semibold uppercase tracking-wider truncate`}>
+                  </div>
+                  <span className="text-[11px] text-slate-400 font-medium truncate mt-0.5">
                     {portalName}
                   </span>
                 </div>
@@ -443,29 +442,29 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
             </div>
 
             {/* Mobile User Card */}
-            <div className="p-3 mx-2 my-2 rounded-2xl bg-surface-container/50 border border-surface-container-highest/50 flex flex-col gap-2">
+            <div className="p-3 mx-2.5 my-2.5 rounded-2xl bg-slate-900/70 border border-slate-800/80 flex flex-col gap-2">
               <div className="flex items-center gap-2.5">
-                <Avatar className="h-9 w-9 border-surface-container-highest bg-surface-container-high text-on-surface shrink-0">
-                  <AvatarFallback className={`font-headline font-bold text-xs ${brandColorClass}`}>
+                <Avatar className="h-9 w-9 border border-slate-700 bg-slate-800 text-white shrink-0">
+                  <AvatarFallback className={`font-headline font-bold text-xs ${brandColorClass} bg-slate-800`}>
                     {initial}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col min-w-0 flex-1">
-                  <span className="text-xs font-bold text-on-surface truncate">
+                  <span className="text-xs font-bold text-white truncate">
                     {displayName}
                   </span>
-                  <span className="text-[10px] font-mono text-outline truncate">
+                  <span className="text-[10px] font-mono text-slate-400 truncate">
                     {currentUser?.email}
                   </span>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-1">
+              <div className="flex items-center justify-between pt-1 border-t border-slate-800/60">
                 <Badge variant={userRoleBadgeVariant} className="text-[9px]">
                   {userRoleBadge}
                 </Badge>
                 {extraBadgeText && (
-                  <span className={`flex items-center gap-1 text-[10px] font-mono ${brandColorClass}`}>
+                  <span className={`flex items-center gap-1 text-[10px] font-medium ${brandColorClass}`}>
                     {ExtraBadgeIcon && <ExtraBadgeIcon className="w-3.5 h-3.5" />}
                     {extraBadgeText}
                   </span>
@@ -478,7 +477,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
               {navGroups.map((group, gIdx) => (
                 <React.Fragment key={gIdx}>
                   {group.heading && (
-                    <span className="px-3 py-1 text-[11px] font-semibold text-on-surface-variant mt-1">
+                    <span className="px-3 py-1.5 text-[10px] font-semibold text-slate-400/90 uppercase tracking-wider mt-1.5">
                       {group.heading}
                     </span>
                   )}
@@ -490,17 +489,17 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
                         to={item.to}
                         onClick={() => setIsMobileOpen(false)}
                         className={({ isActive }) =>
-                          `flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-colors ${
+                          `flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
                             isActive
-                              ? 'bg-surface-container-high text-primary border border-surface-container-highest font-semibold shadow-xs'
-                              : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest/40'
+                              ? 'bg-primary/20 text-white border border-primary/40 font-semibold shadow-xs'
+                              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
                           }`
                         }
                       >
                         <ItemIcon className="w-4 h-4 shrink-0" />
                         <span className="truncate">{item.label}</span>
                         {item.badge && (
-                          <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded bg-surface-container-highest text-outline">
+                          <span className="ml-auto text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700/60">
                             {item.badge}
                           </span>
                         )}
@@ -508,25 +507,21 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
                     );
                   })}
                   {gIdx < navGroups.length - 1 && (
-                    <div className="my-1.5">
-                      <Separator />
-                    </div>
+                    <div className="my-2 border-t border-slate-800/70" />
                   )}
                 </React.Fragment>
               ))}
 
               {showPublicDirectoryLink && (
                 <>
-                  <div className="my-1.5">
-                    <Separator />
-                  </div>
-                  <span className="px-3 py-1 text-[11px] font-semibold text-on-surface-variant">
+                  <div className="my-2 border-t border-slate-800/70" />
+                  <span className="px-3 py-1.5 text-[10px] font-semibold text-slate-400/90 uppercase tracking-wider">
                     Explore Healthcare
                   </span>
                   <Link
                     to="/doctors"
                     onClick={() => setIsMobileOpen(false)}
-                    className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-on-surface-variant hover:text-primary hover:bg-primary/10 transition-colors"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-primary/20 transition-all"
                   >
                     <Search className="w-4 h-4 shrink-0" />
                     <span className="truncate">{publicDirectoryLabel}</span>
@@ -537,8 +532,8 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
           </div>
 
           {/* Drawer Footer */}
-          <div className="p-3 border-t border-surface-container-highest/50 flex flex-col gap-2">
-            <div className="p-2 rounded-xl bg-surface-container/60 border border-outline-variant/30 text-[10px] text-outline flex items-center gap-2">
+          <div className="p-3 border-t border-slate-800/80 flex flex-col gap-2">
+            <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800/60 text-[10px] text-slate-400 flex items-center gap-2">
               <Sparkles className={`w-3.5 h-3.5 ${brandColorClass} shrink-0`} />
               <span className="truncate">{userSecurityNotice}</span>
             </div>

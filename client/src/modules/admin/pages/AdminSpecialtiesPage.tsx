@@ -24,6 +24,7 @@ import {
   CardTitle,
   CardContent,
   Badge,
+  Input,
 } from '../../../components/ui';
 
 interface AdminSpecialtiesPageProps {
@@ -302,13 +303,13 @@ export const AdminSpecialtiesPage: React.FC<AdminSpecialtiesPageProps> = ({ curr
       {/* Filter and Search Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 bg-surface-container border border-surface-container-highest rounded-2xl">
         <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-outline absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
+          <Search className="w-4 h-4 text-outline absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Input
             type="text"
             placeholder="Search specialties or slugs..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-surface-container-high border border-surface-container-highest focus:outline-none focus:border-primary text-on-surface placeholder:text-outline"
+            className="pl-9 h-9"
           />
         </div>
 
@@ -507,7 +508,7 @@ export const AdminSpecialtiesPage: React.FC<AdminSpecialtiesPageProps> = ({ curr
                 <label className="text-xs font-semibold text-on-surface">
                   Specialty Name *
                 </label>
-                <input
+                <Input
                   type="text"
                   required
                   placeholder="e.g. Ophthalmology, Oncology"
@@ -524,7 +525,7 @@ export const AdminSpecialtiesPage: React.FC<AdminSpecialtiesPageProps> = ({ curr
                       );
                     }
                   }}
-                  className="w-full px-3 py-2 text-xs rounded-xl bg-surface-container-high border border-surface-container-highest focus:outline-none focus:border-primary text-on-surface"
+                  className="h-9"
                 />
               </div>
 
@@ -533,14 +534,14 @@ export const AdminSpecialtiesPage: React.FC<AdminSpecialtiesPageProps> = ({ curr
                 <label className="text-xs font-semibold text-on-surface">
                   URL Slug Identifier *
                 </label>
-                <input
+                <Input
                   type="text"
                   required
                   disabled={!!editingSpecialty}
                   placeholder="e.g. ophthalmology"
                   value={formSlug}
                   onChange={(e) => setFormSlug(e.target.value)}
-                  className="w-full px-3 py-2 text-xs font-mono rounded-xl bg-surface-container-high border border-surface-container-highest focus:outline-none focus:border-primary text-on-surface disabled:opacity-60"
+                  className="h-9 font-mono disabled:opacity-60"
                 />
               </div>
 
