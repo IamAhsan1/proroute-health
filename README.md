@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React" />
   <img src="https://img.shields.io/badge/Vite-5.x-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
   <img src="https://img.shields.io/badge/PostgreSQL-Neon_Serverless-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
-  <img src="https://img.shields.io/badge/Tests-186%20Passed-brightgreen?style=for-the-badge&logo=vitest&logoColor=white" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-204%20Passed-brightgreen?style=for-the-badge&logo=vitest&logoColor=white" alt="Tests" />
   <img src="https://img.shields.io/badge/Security-IDOR%20Protected-8A2BE2?style=for-the-badge&logo=shield&logoColor=white" alt="Security" />
 </p>
 
@@ -78,7 +78,7 @@ flowchart TD
 - **Split-Shift Weekly Schedules:** Doctors configure daily shifts (e.g., Morning 09:00-13:00 + Evening 17:00-21:00) with custom slot durations (15, 30, 45, 60m) and buffer times (0, 5, 10, 15m).
 - **Date Overrides & Blackouts:** Support for full-day holiday blackouts and custom single-day shifts that preserve configured consultation durations.
 - **Multi-Timezone Determinism:** Day of week evaluated at UTC midday with DST boundary offset convergence. Supports instant browser timezone auto-detection and Clinic vs Local patient toggle.
-- **Healthcare Safety Window:** Enforces a minimum 2-hour advance booking notice and a maximum 14-day discovery query horizon.
+- **Healthcare Safety Window:** Enforces a 15-minute advance booking notice gate (maximizing clinic and schedule utilization) and a maximum 14-day discovery query horizon.
 
 ### 4. Concurrency-Safe Booking Lifecycle & Queues (Phase 4)
 - **Two-Tier Concurrency Control (SEC-04):** Application-level `SELECT ... FOR UPDATE` serialization row locks combined with an immutable PostgreSQL partial unique index (`Appointment_active_slot_unique_idx`) prevents double-bookings under parallel contention.
@@ -207,6 +207,7 @@ Ensure the following variables are configured:
 PORT=5000
 NODE_ENV=development
 DATABASE_URL="postgresql://user:password@host/database?sslmode=require"
+REDIS_URL="redis://default:password@host:port"
 JWT_ACCESS_SECRET="your-32-character-minimum-access-secret"
 JWT_REFRESH_SECRET="your-32-character-minimum-refresh-secret"
 CORS_ORIGIN="http://localhost:5173"
@@ -246,17 +247,17 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 ProRoute enforces rigorous automated testing covering authentication flows, security boundaries, slot calculations, and timezone determinism.
 
 ```bash
-# Run server Vitest test suite (22 test suites | 122 tests)
+# Run server Vitest test suite (31 test suites | 171 tests)
 npm run test:server
 
-# Run client Vitest test suite (6 test suites | 21 tests)
+# Run client Vitest test suite (9 test suites | 33 tests)
 npm run test:client
 
 # Production client type-check and bundle build
 npm run build:client
 ```
 
-**Total Test Coverage:** 28 test files / 143 tests passing.
+**Total Test Coverage:** 40 test files / 204 tests passing (100% green).
 
 ---
 
@@ -265,8 +266,8 @@ npm run build:client
 - [x] **Phase 1: Architecture Foundation & Core Authentication** (Completed)
 - [x] **Phase 2: Specialties & Professional Doctor Verification** (Completed)
 - [x] **Phase 3: Doctor Availability & Slot Management** (Completed)
-- [ ] **Phase 4: Concurrency-Safe Booking & Lifecycle State Machine** (Next)
-- [ ] **Phase 5: Payment Strategy, Webhooks & Idempotency**
+- [x] **Phase 4: Concurrency-Safe Booking Lifecycle** (Completed)
+- [ ] **Phase 5: Payment Strategy, Webhooks & Idempotency** (Next)
 - [ ] **Phase 6: Private Medical Document Management with Amazon S3**
 - [ ] **Phase 7: Real-Time Authenticated In-Appointment Communication**
 - [ ] **Phase 8: Constrained AI Triage & Specialist Routing**

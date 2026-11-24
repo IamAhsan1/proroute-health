@@ -171,7 +171,7 @@ All endpoints are canonically mounted under `/api/v1/appointments`:
 | **Instant Access Token Revocation** | `instant-revocation.test.ts` (3 tests) | 3/3 passed | **PASS** |
 | **Frontend Booking Modal** | `BookingConfirmModal.test.tsx` (4 tests) | 4/4 passed | **PASS** |
 | **Frontend Appointment Service** | `appointment.service.test.ts` (6 tests) | 6/6 passed | **PASS** |
-| **System-wide Vitest Suite** | `npm run test:server` & `npm run test:client` | 186/186 passed | **PASS** |
+| **System-wide Vitest Suite** | `npm run test:server` & `npm run test:client` | 204/204 passed (171 server + 33 client) | **PASS** |
 
 ---
 

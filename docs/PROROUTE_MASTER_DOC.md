@@ -190,7 +190,7 @@ ProRoute follows a 10-phase Full-Stack Vertical Slice milestone execution plan (
   - Asynchronous 15-minute hold expiration worker with BullMQ and Redis, plus resilient in-memory fallback for lightweight environments.
   - Instant JWT access token revocation via Redis-backed `user:revoked_before` timestamps upon global logout or password reset.
   - Complete frontend vertical slice: `BookingConfirmModal` with 409 conflict auto-recovery, Patient Consultation Dashboard (`/portal/appointments`), Doctor Consultation Queue (`/doctor/appointments`), and policy-aware `CancelAppointmentModal`.
-  - Full Test Suite: **27 server test files (153 passing tests) + 9 client test files (33 passing tests) = 186/186 passing tests (100% green)**.
+  - Full Test Suite: **31 server test files (171 passing tests) + 9 client test files (33 passing tests) = 204/204 passing tests (100% green)**.
 
 ---
 
